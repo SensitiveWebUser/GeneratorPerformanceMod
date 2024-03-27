@@ -13,19 +13,18 @@ namespace MyTestMod.Harmony
         [HarmonyPatch("Plan")]
         public class Plan
         {
-            private static bool Prefix(DynamicProperties thisWorldProperties, int worldSeed, ref IEnumerator __result)
+            private static bool Prefix(int worldSeed, ref IEnumerator __result)
             {
                 Log.Out("[MOD]======HighwayPlanner.Plan Prefix======");
-                Log.Out("[MOD]thisWorldProperties: " + thisWorldProperties);
                 Log.Out("[MOD]worldSeed: " + worldSeed);
 
-                IEnumerator plan = NewPlan(thisWorldProperties, worldSeed);
+                IEnumerator plan = NewPlanMethod(worldSeed);
                 __result = plan;
 
                 return false;
             }
 
-            public static IEnumerator NewPlan(DynamicProperties thisWorldProperties, int worldSeed)
+            public static IEnumerator NewPlanMethod(int worldSeed)
             {
                 yield return WorldBuilder.Instance.SetMessage("Planning Highways");
                 MicroStopwatch ms = new MicroStopwatch(true);
