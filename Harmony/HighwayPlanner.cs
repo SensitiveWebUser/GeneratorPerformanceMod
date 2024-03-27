@@ -32,51 +32,43 @@ namespace MyTestMod.Harmony
                 yield return WorldBuilder.Instance.SetMessage("Planning Highways");
                 MicroStopwatch ms = new MicroStopwatch(true);
                 ExitConnections.Clear();
-
-                SetAllExistingNeighborsForGateways();
-
-                List<Township> highwayTownships = GetHighwayTownships();
+                foreach (Township township in WorldBuilder.Instance.Townships)
+                {
+                    foreach (StreetTile gateway in township.Gateways)
+                        gateway.SetAllExistingNeighborsForGateway();
+                }
+                List<Township> highwayTownships = WorldBuilder.Instance.Townships.FindAll(_township => WorldBuilder.townshipDatas[_township.GetTypeName()].SpawnGateway);
                 Shuffle(worldSeed + 3943 + 1, ref highwayTownships);
-
                 TownshipNode currentTownshipNode = new TownshipNode(highwayTownships[0]);
-                RunPrimsAlgorithmAndAddPaths(currentTownshipNode, highwayTownships);
-
+                yield return PrimsAlgo(currentTownshipNode, highwayTownships);
+                for (; currentTownshipNode != null; currentTownshipNode = currentTownshipNode.next)
+                {
+                    if (currentTownshipNode.Path != null)
+                        WorldBuilder.Instance.paths.Add(currentTownshipNode.Path);
+                    if (currentTownshipNode.next == null)
+                        break;
+                }
                 currentTownshipNode = new TownshipNode(currentTownshipNode.Township);
-                RunPrimsAlgorithmAndAddPaths(currentTownshipNode, highwayTownships);
-
+                yield return PrimsAlgo(currentTownshipNode, highwayTownships);
+                for (; currentTownshipNode != null; currentTownshipNode = currentTownshipNode.next)
+                {
+                    if (currentTownshipNode.Path != null)
+                        WorldBuilder.Instance.paths.Add(currentTownshipNode.Path);
+                    if (currentTownshipNode.next == null)
+                        break;
+                }
                 currentTownshipNode = new TownshipNode(currentTownshipNode.Township);
-                RunPrimsAlgorithmAndAddPaths(currentTownshipNode, highwayTownships);
+                yield return PrimsAlgo(currentTownshipNode, highwayTownships);
+                for (; currentTownshipNode != null; currentTownshipNode = currentTownshipNode.next)
+                {
+                    if (currentTownshipNode.Path != null)
+                        WorldBuilder.Instance.paths.Add(currentTownshipNode.Path);
+                }
 
                 yield return CleanupHighwayConnections(highwayTownships);
                 yield return RunTownshipDirtRoads();
                 
                 Log.Out(string.Format("HighwayPlanner.Plan took {0}", (float)(ms.ElapsedMilliseconds * (1.0 / 1000.0))));
-            }
-        }
-
-        private static void SetAllExistingNeighborsForGateways()
-        {
-            foreach (Township township in WorldBuilder.Instance.Townships)
-            {
-                foreach (StreetTile gateway in township.Gateways)
-                    gateway.SetAllExistingNeighborsForGateway();
-            }
-        }
-
-        private static List<Township> GetHighwayTownships()
-        {
-            return WorldBuilder.Instance.Townships.FindAll(_township => WorldBuilder.townshipDatas[_township.GetTypeName()].SpawnGateway);
-        }
-
-        private static IEnumerator RunPrimsAlgorithmAndAddPaths(TownshipNode cur, List<Township> highwayTownships)
-        {
-            yield return PrimsAlgo(cur, highwayTownships);
-            for (; cur != null; cur = cur.next)
-            {
-                if (cur.Path != null)
-                    WorldBuilder.Instance.paths.Add(cur.Path);
-                if (cur.next == null)
-                    break;
             }
         }
 
