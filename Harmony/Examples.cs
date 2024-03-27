@@ -18,13 +18,6 @@ namespace MyTestMod.Harmony
             Log.Out($"btnNewGame's Label: {___btnNewGame.Label}");
             Log.Out("OnOpenPrefix(): I happen before the method starts.");
 
-            // If I wanted to change the value of a private field, I would do it here.
-            ___btnContinueGame.Label = "Continue ff Game";
-            ___btnContinueGame.Tooltip = "Continue the game from where you left off.";
-
-            // write to mod log file (Mods/MyTestMod/Logs/MyTestMod.log)
-            //System.IO.File.AppendAllText("Mods/MyTestMod/Logs/MyTestMod.log", "OnOpenPrefix(): I happen before the method starts.\n");
-
             // If I did not want the method we are patching to run at all, we would return false.
             return true;
         }
@@ -52,17 +45,6 @@ namespace MyTestMod.Harmony
     {
         // the parameter list must match vanilla, typos included!
         private static bool Prefix(int playOnEntityId, string soundGoupName, float _occlusion)
-        {
-            return true;
-        }
-    }
-
-    [HarmonyPatch(typeof(Client))]
-    [HarmonyPatch("Play")]
-    [HarmonyPatch(new[] { typeof(Vector3), typeof(string), typeof(float), typeof(int) })]
-    public class AudioClientPlay2
-    {
-        private static bool Prefix(Vector3 position, string soundGoupName)
         {
             return true;
         }
