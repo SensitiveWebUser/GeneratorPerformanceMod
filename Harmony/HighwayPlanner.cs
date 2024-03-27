@@ -1,9 +1,6 @@
 ﻿using HarmonyLib;
-using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
 using WorldGenerationEngineFinal;
@@ -16,42 +13,32 @@ namespace MyTestMod.Harmony
         [HarmonyPatch("Plan")]
         public class Plan
         {
-            /*
-            static bool Prefix(DynamicProperties thisWorldProperties, int worldSeed)
-            {
-                Log.Out("[MOD]======HighwayPlanner.Plan Prefix======");
-                Log.Out("[MOD]thisWorldProperties: " + thisWorldProperties);
-                Log.Out("[MOD]worldSeed: " + worldSeed);
-                return true;
-            }
-            */
-
-            static bool Prefix(DynamicProperties thisWorldProperties, int worldSeed, ref IEnumerator __result)
+            private static bool Prefix(DynamicProperties thisWorldProperties, int worldSeed, ref IEnumerator __result)
             {
                 Log.Out("[MOD]======HighwayPlanner.Plan Prefix======");
                 Log.Out("[MOD]thisWorldProperties: " + thisWorldProperties);
                 Log.Out("[MOD]worldSeed: " + worldSeed);
 
-                IEnumerator plan = newPlan(thisWorldProperties, worldSeed);
+                IEnumerator plan = NewPlan(thisWorldProperties, worldSeed);
                 __result = plan;
 
                 return false;
             }
 
-            public static IEnumerator newPlan(DynamicProperties thisWorldProperties, int worldSeed)
+            public static IEnumerator NewPlan(DynamicProperties thisWorldProperties, int worldSeed)
             {
-                yield return (object)WorldBuilder.Instance.SetMessage("Planning Highways");
+                yield return WorldBuilder.Instance.SetMessage("Planning Highways");
                 MicroStopwatch ms = new MicroStopwatch(true);
-                HighwayPlanner.ExitConnections.Clear();
+                ExitConnections.Clear();
                 foreach (Township township in WorldBuilder.Instance.Townships)
                 {
                     foreach (StreetTile gateway in township.Gateways)
                         gateway.SetAllExistingNeighborsForGateway();
                 }
-                List<Township> highwayTownships = WorldBuilder.Instance.Townships.FindAll((Predicate<Township>)(_township => WorldBuilder.townshipDatas[_township.GetTypeName()].SpawnGateway));
-                HighwayPlanner.Shuffle<Township>(worldSeed + 3943 + 1, ref highwayTownships);
-                HighwayPlanner.TownshipNode cur = new HighwayPlanner.TownshipNode(highwayTownships[0]);
-                yield return (object)HighwayPlanner.primsAlgo(cur, highwayTownships);
+                List<Township> highwayTownships = WorldBuilder.Instance.Townships.FindAll(_township => WorldBuilder.townshipDatas[_township.GetTypeName()].SpawnGateway);
+                Shuffle(worldSeed + 3943 + 1, ref highwayTownships);
+                TownshipNode cur = new TownshipNode(highwayTownships[0]);
+                yield return PrimsAlgo(cur, highwayTownships);
                 for (; cur != null; cur = cur.next)
                 {
                     if (cur.Path != null)
@@ -59,8 +46,8 @@ namespace MyTestMod.Harmony
                     if (cur.next == null)
                         break;
                 }
-                cur = new HighwayPlanner.TownshipNode(cur.Township);
-                yield return (object)HighwayPlanner.primsAlgo(cur, highwayTownships);
+                cur = new TownshipNode(cur.Township);
+                yield return PrimsAlgo(cur, highwayTownships);
                 for (; cur != null; cur = cur.next)
                 {
                     if (cur.Path != null)
@@ -68,30 +55,23 @@ namespace MyTestMod.Harmony
                     if (cur.next == null)
                         break;
                 }
-                cur = new HighwayPlanner.TownshipNode(cur.Township);
-                yield return (object)HighwayPlanner.primsAlgo(cur, highwayTownships);
+                cur = new TownshipNode(cur.Township);
+                yield return PrimsAlgo(cur, highwayTownships);
                 for (; cur != null; cur = cur.next)
                 {
                     if (cur.Path != null)
                         WorldBuilder.Instance.paths.Add(cur.Path);
                 }
-                yield return (object)HighwayPlanner.cleanupHighwayConnections(highwayTownships);
-                yield return (object)HighwayPlanner.runTownshipDirtRoads();
-                Log.Out(string.Format("HighwayPlanner.Plan took {0}", (object)(float)((double)ms.ElapsedMilliseconds * (1.0 / 1000.0))));
+                yield return CleanupHighwayConnections(highwayTownships);
+                yield return RunTownshipDirtRoads();
+                Log.Out(string.Format("HighwayPlanner.Plan took {0}", (float)(ms.ElapsedMilliseconds * (1.0 / 1000.0))));
             }
         }
 
-        private static List<HighwayPlanner.ExitConnection> ExitConnections = new List<HighwayPlanner.ExitConnection>();
-        private static List<Vector2i> normalNeighbors4way = new List<Vector2i>()
-    {
-      new Vector2i(0, 1),
-      new Vector2i(1, 0),
-      new Vector2i(0, -1),
-      new Vector2i(-1, 0)
-    };
+        private static readonly List<ExitConnection> ExitConnections = new List<ExitConnection>();
         private static Path GetPathToTownshipResult;
 
-        private static IEnumerator cleanupHighwayConnections(List<Township> highwayTownships)
+        private static IEnumerator CleanupHighwayConnections(List<Township> highwayTownships)
         {
             List<Vector2i> tilesToRemove = new List<Vector2i>();
             List<Path> pathsToRemove = new List<Path>();
@@ -99,7 +79,7 @@ namespace MyTestMod.Harmony
             {
                 if (highwayTownship.Gateways.Count == 0)
                 {
-                    Debug.LogError((object)"Township has zero gateways! This should not happen!");
+                    Debug.LogError("Township has zero gateways! This should not happen!");
                 }
                 else
                 {
@@ -115,12 +95,12 @@ namespace MyTestMod.Harmony
                     }
                 }
             }
-            foreach (HighwayPlanner.ExitConnection exitConnection in HighwayPlanner.ExitConnections)
+            foreach (ExitConnection exitConnection in ExitConnections)
                 exitConnection.SetExitUsedManually();
             foreach (Township highwayTownship in highwayTownships)
             {
                 Township t = highwayTownship;
-                yield return (object)WorldBuilder.Instance.SetMessage("Planning Highways");
+                yield return WorldBuilder.Instance.SetMessage("Planning Highways");
                 if (WorldBuilder.townshipDatas[t.GetTypeName()].SpawnGateway && t.Gateways.Count != 0)
                 {
                     foreach (StreetTile gateway in t.Gateways)
@@ -170,8 +150,8 @@ namespace MyTestMod.Harmony
                             streetTileGrid.Township.Streets.Remove(vector2i);
                         }
                         streetTileGrid.StreetTilePrefabDatas.Clear();
-                        streetTileGrid.District = (District)null;
-                        streetTileGrid.Township = (Township)null;
+                        streetTileGrid.District = null;
+                        streetTileGrid.Township = null;
                     }
                     tilesToRemove.Clear();
                     foreach (Path path in pathsToRemove)
@@ -180,18 +160,17 @@ namespace MyTestMod.Harmony
                         WorldBuilder.Instance.paths.Remove(path);
                     }
                     pathsToRemove.Clear();
-                    t = (Township)null;
                 }
             }
         }
 
-        private static IEnumerator runTownshipDirtRoads()
+        private static IEnumerator RunTownshipDirtRoads()
         {
             MicroStopwatch ms = new MicroStopwatch(true);
-            foreach (Township t in WorldBuilder.Instance.Townships.FindAll((Predicate<Township>)(_township => !WorldBuilder.townshipDatas[_township.GetTypeName()].SpawnGateway)))
+            foreach (Township town in WorldBuilder.Instance.Townships.FindAll(_township => !WorldBuilder.townshipDatas[_township.GetTypeName()].SpawnGateway))
             {
-                yield return (object)WorldBuilder.Instance.SetMessage("Planning Highways");
-                foreach (StreetTile streetTile in t.Streets.Values)
+                yield return WorldBuilder.Instance.SetMessage("Planning Highways");
+                foreach (StreetTile streetTile in town.Streets.Values)
                 {
                     if (streetTile.GetNumTownshipNeighbors() == 1)
                     {
@@ -225,7 +204,7 @@ namespace MyTestMod.Harmony
                     }
                 }
                 label_18:
-                foreach (Vector2i exit in t.GetUnusedTownExits())
+                foreach (Vector2i exit in town.GetUnusedTownExits())
                 {
                     Vector2i closestPoint = Vector2i.zero;
                     float closestDist = float.MaxValue;
@@ -240,7 +219,7 @@ namespace MyTestMod.Harmony
                                 if ((double)dist < (double)closestDist)
                                 {
                                     if (WorldBuilder.Instance.IsMessageElapsed())
-                                        yield return (object)WorldBuilder.Instance.SetMessage("Planning Highways");
+                                        yield return WorldBuilder.Instance.SetMessage("Planning Highways");
                                     if (PathingUtils.HasValidPath(exit, new Vector2i(pp), true))
                                     {
                                         closestDist = dist;
@@ -252,11 +231,11 @@ namespace MyTestMod.Harmony
                         }
                     }
                     if (WorldBuilder.Instance.IsMessageElapsed())
-                        yield return (object)WorldBuilder.Instance.SetMessage("Planning Highways");
+                        yield return WorldBuilder.Instance.SetMessage("Planning Highways");
                     Path path1 = new Path(exit, closestPoint, 2, true, true, false, false);
                     if (path1.IsValid)
                     {
-                        foreach (StreetTile streetTile in t.Streets.Values)
+                        foreach (StreetTile streetTile in town.Streets.Values)
                         {
                             for (int index = 0; index < 4; ++index)
                             {
@@ -268,7 +247,7 @@ namespace MyTestMod.Harmony
                     }
                 }
             }
-            Log.Out(string.Format("HighwayPlanner.runTownshipDirtRoads took {0}", (object)(float)((double)ms.ElapsedMilliseconds * (1.0 / 1000.0))));
+            Log.Out(string.Format("HighwayPlanner.runTownshipDirtRoads took {0}", (float)(ms.ElapsedMilliseconds * (1.0 / 1000.0))));
         }
 
         private static void Shuffle<T>(int seed, ref List<T> list)
@@ -279,38 +258,35 @@ namespace MyTestMod.Harmony
             {
                 --count;
                 int index = gameRandom.RandomRange(0, count) % count;
-                T obj = list[index];
-                list[index] = list[count];
-                list[count] = obj;
+                (list[count], list[index]) = (list[index], list[count]);
             }
             GameRandomManager.Instance.FreeGameRandom(gameRandom);
         }
 
-        private static IEnumerator primsAlgo(
-          HighwayPlanner.TownshipNode head,
-          List<Township> highwayTownships,
-          bool onlyNonConnected = false)
+        private static IEnumerator PrimsAlgo(
+          TownshipNode head,
+          List<Township> highwayTownships)
         {
             List<Township> closedList = new List<Township>();
-            HighwayPlanner.TownshipNode current = head;
+            TownshipNode current = head;
             List<Township> townshipList = new List<Township>();
             MicroStopwatch msReset = new MicroStopwatch(true);
             while (current != null)
             {
                 int closestDist = int.MaxValue;
-                Township closestTownship = (Township)null;
-                List<Township> all = highwayTownships.FindAll((Predicate<Township>)(t => !current.Township.ConnectedTownships.Contains(t.ID) && !closedList.Contains(t) && t.ID != current.Township.ID && WorldBuilder.townshipDatas[t.GetTypeName()].SpawnGateway));
-                all.Sort((Comparison<Township>)((_t1, _t2) => Vector2i.DistanceSqr(current.Township.GridCenter, _t1.GridCenter).CompareTo(Vector2i.DistanceSqr(current.Township.GridCenter, _t2.GridCenter))));
+                Township closestTownship = null;
+                List<Township> all = highwayTownships.FindAll(t => !current.Township.ConnectedTownships.Contains(t.ID) && !closedList.Contains(t) && t.ID != current.Township.ID && WorldBuilder.townshipDatas[t.GetTypeName()].SpawnGateway);
+                all.Sort((_t1, _t2) => Vector2i.DistanceSqr(current.Township.GridCenter, _t1.GridCenter).CompareTo(Vector2i.DistanceSqr(current.Township.GridCenter, _t2.GridCenter)));
                 msReset.ResetAndRestart();
                 foreach (Township township in all)
                 {
                     Township t = township;
-                    yield return (object)HighwayPlanner.GetPathToTownship(current.Township, t, msReset);
-                    Path path = HighwayPlanner.GetPathToTownshipResult;
-                    HighwayPlanner.GetPathToTownshipResult = (Path)null;
+                    yield return GetPathToTownship(current.Township, t, msReset);
+                    Path path = GetPathToTownshipResult;
+                    GetPathToTownshipResult = null;
                     if (msReset.ElapsedMilliseconds > 500L)
                     {
-                        yield return (object)WorldBuilder.Instance.SetMessage("Planning Highways");
+                        yield return WorldBuilder.Instance.SetMessage("Planning Highways");
                         msReset.ResetAndRestart();
                     }
                     if (path != null)
@@ -319,8 +295,8 @@ namespace MyTestMod.Harmony
                         closestTownship = t;
                         break;
                     }
-                    path = (Path)null;
-                    t = (Township)null;
+                    path = null;
+                    t = null;
                 }
                 if (closestTownship == null)
                 {
@@ -330,21 +306,23 @@ namespace MyTestMod.Harmony
                 {
                     current.Township.ConnectedTownships.Add(closestTownship.ID);
                     closestTownship.ConnectedTownships.Add(current.Township.ID);
-                    HighwayPlanner.SetTileExits(current.Path);
+                    SetTileExits(current.Path);
                     current.Path.commitPathingMapData();
                     closedList.Add(current.Township);
-                    current.next = new HighwayPlanner.TownshipNode(closestTownship);
-                    current.next.Distance = (float)closestDist;
+                    current.next = new TownshipNode(closestTownship)
+                    {
+                        Distance = closestDist
+                    };
                     current = current.next;
-                    closestTownship = (Township)null;
+                    closestTownship = null;
                 }
             }
         }
 
         private static void SetTileExits(Path path)
         {
-            HighwayPlanner.SetTileExit(path, path.StartPosition);
-            HighwayPlanner.SetTileExit(path, path.EndPosition);
+            SetTileExit(path, path.StartPosition);
+            SetTileExit(path, path.EndPosition);
         }
 
         private static void SetTileExit(Path currentPath, Vector2i exit)
@@ -354,22 +332,22 @@ namespace MyTestMod.Harmony
             {
                 if (parent.District != null && parent.District.name == "gateway")
                 {
-                    HighwayPlanner.ExitConnections.Add(new HighwayPlanner.ExitConnection(parent, exit, currentPath));
+                    ExitConnections.Add(new ExitConnection(parent, exit, currentPath));
                     return;
                 }
                 foreach (StreetTile neighbor in parent.GetNeighbors())
                 {
                     if (neighbor != null && neighbor.District != null && neighbor.District.name == "gateway")
                     {
-                        HighwayPlanner.ExitConnections.Add(new HighwayPlanner.ExitConnection(neighbor, exit, currentPath));
+                        ExitConnections.Add(new ExitConnection(neighbor, exit, currentPath));
                         return;
                     }
                 }
-                parent = (StreetTile)null;
+                parent = null;
             }
             if (parent != null)
                 return;
-            Township township1 = (Township)null;
+            Township township1 = null;
             foreach (Township township2 in WorldBuilder.Instance.Townships)
             {
                 if (township2.Area.Contains(exit.AsVector2()))
@@ -386,25 +364,11 @@ namespace MyTestMod.Harmony
                 {
                     if (gateway.getHighwayExitPosition(index) == exit || (double)Vector2i.DistanceSqr(gateway.getHighwayExitPosition(index), exit) < 100.0)
                     {
-                        HighwayPlanner.ExitConnections.Add(new HighwayPlanner.ExitConnection(gateway, exit, currentPath));
+                        ExitConnections.Add(new ExitConnection(gateway, exit, currentPath));
                         return;
                     }
                 }
             }
-        }
-
-        private static int GetDist(Township thisTownship, Township otherTownship, ref int closestDist)
-        {
-            foreach (Vector2i unusedTownExit1 in thisTownship.GetUnusedTownExits())
-            {
-                foreach (Vector2i unusedTownExit2 in otherTownship.GetUnusedTownExits())
-                {
-                    int num = Vector2i.DistanceSqrInt(unusedTownExit1, unusedTownExit2);
-                    if (num < closestDist)
-                        closestDist = num;
-                }
-            }
-            return closestDist;
         }
 
         private static IEnumerator GetPathToTownship(
@@ -412,9 +376,9 @@ namespace MyTestMod.Harmony
           Township otherTownship,
           MicroStopwatch msReset)
         {
-            HighwayPlanner.GetPathToTownshipResult = (Path)null;
+            GetPathToTownshipResult = null;
             int closestDist = int.MaxValue;
-            Path path = (Path)null;
+            Path path = null;
             foreach (Vector2i unusedTownExit1 in thisTownship.GetUnusedTownExits())
             {
                 foreach (Vector2i unusedTownExit2 in otherTownship.GetUnusedTownExits())
@@ -430,32 +394,11 @@ namespace MyTestMod.Harmony
                 }
                 if (msReset.ElapsedMilliseconds > 500L)
                 {
-                    yield return (object)null;
+                    yield return null;
                     msReset.ResetAndRestart();
                 }
             }
-            HighwayPlanner.GetPathToTownshipResult = path;
-        }
-
-        private static int GetClosestPathToTownship(Township thisTownship, Township otherTownship)
-        {
-            int closestPathToTownship = int.MaxValue;
-            foreach (Vector2i unusedTownExit1 in thisTownship.GetUnusedTownExits())
-            {
-                foreach (Vector2i unusedTownExit2 in otherTownship.GetUnusedTownExits())
-                {
-                    int pathCost = PathingUtils.GetPathCost(unusedTownExit1, unusedTownExit2);
-                    if (pathCost >= 3 && pathCost < closestPathToTownship)
-                        closestPathToTownship = pathCost;
-                }
-            }
-            return closestPathToTownship;
-        }
-
-        private static int distanceSqr(Vector2i pointA, Vector2i pointB)
-        {
-            Vector2i vector2i = pointA - pointB;
-            return vector2i.x * vector2i.x + vector2i.y * vector2i.y;
+            GetPathToTownshipResult = path;
         }
 
         public enum CDirs
@@ -473,13 +416,13 @@ namespace MyTestMod.Harmony
             public int ID;
             public StreetTile ParentTile;
             public Vector2i WorldPosition;
-            public HighwayPlanner.CDirs ExitEdge = HighwayPlanner.CDirs.Invalid;
+            public CDirs ExitEdge = CDirs.Invalid;
             public Path ConnectedPath;
             public StreetTile ConnectedTile;
 
-            public bool IsPathConnection => this.ConnectedPath != null;
+            public bool IsPathConnection => ConnectedPath != null;
 
-            public bool IsTileConnection => this.ConnectedTile != null;
+            public bool IsTileConnection => ConnectedTile != null;
 
             public ExitConnection(
               StreetTile parent,
@@ -487,45 +430,45 @@ namespace MyTestMod.Harmony
               Path connectedPath = null,
               StreetTile connectedTile = null)
             {
-                this.ID = HighwayPlanner.ExitConnection.NextID++;
-                this.ParentTile = parent;
-                this.WorldPosition = worldPos;
-                this.ConnectedPath = connectedPath;
-                this.ConnectedTile = connectedTile;
+                ID = NextID++;
+                ParentTile = parent;
+                WorldPosition = worldPos;
+                ConnectedPath = connectedPath;
+                ConnectedTile = connectedTile;
                 for (int index = 0; index < 4; ++index)
                 {
-                    if (parent.getHighwayExitPosition(index) == this.WorldPosition)
+                    if (parent.getHighwayExitPosition(index) == WorldPosition)
                     {
-                        this.ExitEdge = (HighwayPlanner.CDirs)index;
+                        ExitEdge = (CDirs)index;
                         break;
                     }
                 }
-                parent.SetExitUsed(this.WorldPosition);
+                parent.SetExitUsed(WorldPosition);
             }
 
             public bool SetExitUsedManually()
             {
-                return this.ParentTile.UsedExitList.Contains(this.ParentTile.getHighwayExitPosition((int)this.ExitEdge)) && this.ParentTile.ConnectedExits[(int)this.ExitEdge] && this.ParentTile.RoadExits[(int)this.ExitEdge] || this.ParentTile.SetExitUsed(this.WorldPosition);
+                return ParentTile.UsedExitList.Contains(ParentTile.getHighwayExitPosition((int)ExitEdge)) && ParentTile.ConnectedExits[(int)ExitEdge] && ParentTile.RoadExits[(int)ExitEdge] || ParentTile.SetExitUsed(WorldPosition);
             }
         }
 
         private class TownshipNode
         {
-            public HighwayPlanner.TownshipNode next;
+            public TownshipNode next;
             public Township Township;
             public Path Path;
             public float Distance;
 
-            public TownshipNode(Township t) => this.Township = t;
+            public TownshipNode(Township t) => Township = t;
 
             public void SetPath(Path p)
             {
-                if (this.Path != null)
+                if (Path != null)
                 {
-                    this.Path.Dispose();
-                    this.Path = (Path)null;
+                    Path.Dispose();
+                    Path = null;
                 }
-                this.Path = p;
+                Path = p;
             }
         }
     }
