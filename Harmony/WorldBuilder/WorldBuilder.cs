@@ -232,20 +232,11 @@ namespace MyTestMod.Harmony.WorldBuilder
             private static IEnumerator NewGenerateBaseStampsMethod(MicroStopwatch ms)
             {
                 RawStamp fillerBiome = StampManager.GetStamp("filler_biome");
-                RawStamp stamp = StampManager.GetStamp("ground");
                 StampManager.GetStamp("base").blendAmount = 0.25f;
-                float r = stamp.terrainPixels[0].r;
                 int worldTileCountWide = worldBuilder.WorldSize / worldBuilder.WorldTileSize;
-                Color32 color = biomeColors[BiomeType.forest];
-                for (int i = 0; i < biomeDest.Length; i++)
-                {
-                    biomeDest[i] = color;
-                }
-                Color color2 = new Color(r, r, r);
-                for (int j = 0; j < terrainDest.Length; j++)
-                {
-                    terrainDest[j] = color2;
-                }
+
+                SettingColours();
+
                 Thread terrainBorderThread = new Thread(delegate ()
                 {
                     Vector2 vector = new Vector2(1.5f, 3.5f);
@@ -283,8 +274,7 @@ namespace MyTestMod.Harmony.WorldBuilder
                                 {
                                     translationData = new TranslationData(worldBuilder.WorldSize - Rand.Instance.Range(0, num2, false), l + Rand.Instance.Range(0, num2, false), true, vector.x, vector.y, true, 0);
                                 }
-                                RawStamp stamp2;
-                                if (translationData != null && (StampManager.TryGetStamp(worldBuilder.biomeMap.data[Mathf.Clamp(translationData.x / worldBuilder.WorldTileSize, 0, worldBuilder.WorldSize / worldBuilder.WorldTileSize - 1), Mathf.Clamp(translationData.y / worldBuilder.WorldTileSize, 0, worldBuilder.WorldSize / worldBuilder.WorldTileSize - 1)].ToString() + "_land_border", out stamp2) || StampManager.TryGetStamp("land_border", out stamp2)))
+                                if (translationData != null && (StampManager.TryGetStamp(worldBuilder.biomeMap.data[Mathf.Clamp(translationData.x / worldBuilder.WorldTileSize, 0, worldBuilder.WorldSize / worldBuilder.WorldTileSize - 1), Mathf.Clamp(translationData.y / worldBuilder.WorldTileSize, 0, worldBuilder.WorldSize / worldBuilder.WorldTileSize - 1)].ToString() + "_land_border", out RawStamp stamp2) || StampManager.TryGetStamp("land_border", out stamp2)))
                                 {
                                     StampManager.DrawStamp(terrainDest, new Stamp(stamp2, translationData, false, default(Color), 0.1f, false, ""), true);
                                 }
@@ -311,8 +301,7 @@ namespace MyTestMod.Harmony.WorldBuilder
                                 {
                                     translationData2 = new TranslationData(worldBuilder.WorldSize - Rand.Instance.Range(0, num2 / 2, false), l, true, vector.x, vector.y, true, 0);
                                 }
-                                RawStamp stamp2;
-                                if (translationData2 != null && (StampManager.TryGetStamp(worldBuilder.biomeMap.data[Mathf.Clamp(translationData2.x / worldBuilder.WorldTileSize, 0, worldBuilder.WorldSize / worldBuilder.WorldTileSize - 1), Mathf.Clamp(translationData2.y / worldBuilder.WorldTileSize, 0, worldBuilder.WorldSize / worldBuilder.WorldTileSize - 1)].ToString() + "_water_border", out stamp2) || StampManager.TryGetStamp("water_border", out stamp2)))
+                                if (translationData2 != null && (StampManager.TryGetStamp(worldBuilder.biomeMap.data[Mathf.Clamp(translationData2.x / worldBuilder.WorldTileSize, 0, worldBuilder.WorldSize / worldBuilder.WorldTileSize - 1), Mathf.Clamp(translationData2.y / worldBuilder.WorldTileSize, 0, worldBuilder.WorldSize / worldBuilder.WorldTileSize - 1)].ToString() + "_water_border", out RawStamp stamp2) || StampManager.TryGetStamp("water_border", out stamp2)))
                                 {
                                     StampManager.DrawStamp(terrainDest, new Stamp(stamp2, translationData2, false, default(Color), 0.1f, false, ""), true);
                                     Stamp stamp3 = new Stamp(stamp2, translationData2, true, new Color32(0, 0, (byte)worldBuilder.WaterHeight, 0), 0.1f, true, "");
@@ -341,8 +330,7 @@ namespace MyTestMod.Harmony.WorldBuilder
                             {
                                 translationData3 = new TranslationData(worldBuilder.WorldSize, l, true, vector2.x, vector2.y, false, 0);
                             }
-                            RawStamp stamp2;
-                            if (translationData3 != null && StampManager.TryGetStamp("ground", out stamp2))
+                            if (translationData3 != null && StampManager.TryGetStamp("ground", out RawStamp stamp2))
                             {
                                 StampManager.DrawStamp(radDest, new Stamp(stamp2, translationData3, true, new Color(1f, 0f, 0f, 0f), 0.1f, false, ""), true);
                             }
@@ -384,6 +372,7 @@ namespace MyTestMod.Harmony.WorldBuilder
                     Priority = System.Threading.ThreadPriority.AboveNormal
                 }
                 };
+
                 Thread[] array = biomeThreads;
                 for (int k = 0; k < array.Length; k++)
                 {
@@ -412,6 +401,22 @@ namespace MyTestMod.Harmony.WorldBuilder
                 }
                 yield break;
             }
+
+            private static void SettingColours()
+            {
+                RawStamp stamp = StampManager.GetStamp("ground");
+                float terrainRed = stamp.terrainPixels[0].r;
+                Color32 colorBiome = biomeColors[BiomeType.forest];
+                Parallel.For(0, biomeDest.Length, delegate (int index)
+                {
+                    biomeDest[index] = colorBiome;
+                });
+                Color colorTerrain = new Color(terrainRed, terrainRed, terrainRed);
+                Parallel.For(0, terrainDest.Length, delegate (int index)
+                {
+                    terrainDest[index] = colorTerrain;
+                });
+            }   
 
             private static BiomeType getBiomeViaNeighbors(int x1, int y1, BiomeType thisBiome)
             {
