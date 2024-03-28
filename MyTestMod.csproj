@@ -59,11 +59,18 @@
       <HintPath>..\..\7DaysToDie_Data\Managed\UnityEngine.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null" />
+    <Reference Include="UnityEngine.ImageConversionModule, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\7DaysToDie_Data\Managed\UnityEngine.ImageConversionModule.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Harmony\Examples.cs" />
-    <Compile Include="Harmony\HighwayPlanner.cs" />
+    <Compile Include="Harmony\HighwayPlanner\ExitConnection.cs" />
+    <Compile Include="Harmony\HighwayPlanner\HighwayPlanner.cs" />
+    <Compile Include="Harmony\HighwayPlanner\TownshipNode.cs" />
     <Compile Include="Harmony\Init.cs" />
+    <Compile Include="Harmony\WorldBuilder\WorldBuilder.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
