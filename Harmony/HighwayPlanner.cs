@@ -14,7 +14,7 @@ namespace MyTestMod.Harmony
 
         [HarmonyPatch(typeof(WorldGenerationEngineFinal.HighwayPlanner))]
         [HarmonyPatch("Plan")]
-        public class Plan
+        private static class Plan
         {
 #pragma warning disable IDE0051 // Remove unused private members
             private static bool Prefix(int worldSeed, ref IEnumerator __result)
@@ -28,7 +28,7 @@ namespace MyTestMod.Harmony
                 return false;
             }
 
-            public static IEnumerator NewPlanMethod(int worldSeed)
+            private static IEnumerator NewPlanMethod(int worldSeed)
             {
                 yield return WorldBuilder.Instance.SetMessage("Planning Highways");
                 MicroStopwatch ms = new MicroStopwatch(true);
@@ -449,7 +449,7 @@ namespace MyTestMod.Harmony
             GetPathToTownshipResult = shortestPath;
         }
 
-        public class ExitConnection
+        private class ExitConnection
         {
             public enum CDirs
             {
