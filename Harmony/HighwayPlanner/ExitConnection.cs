@@ -15,20 +15,20 @@ namespace MyTestMod.Harmony.HighwayPlanner
 
         public static int NextID;
         public int ID;
-        public StreetTile ParentTile;
+        public WorldGenerationEngineFinal.StreetTile ParentTile;
         public Vector2i WorldPosition;
         public CDirs ExitEdge = CDirs.Invalid;
         public Path ConnectedPath;
-        public StreetTile ConnectedTile;
+        public WorldGenerationEngineFinal.StreetTile ConnectedTile;
 
         public bool IsPathConnection => ConnectedPath != null;
         public bool IsTileConnection => ConnectedTile != null;
 
         public ExitConnection(
-            StreetTile parent,
+            WorldGenerationEngineFinal.StreetTile parent,
             Vector2i worldPos,
             Path connectedPath = null,
-            StreetTile connectedTile = null)
+            WorldGenerationEngineFinal.StreetTile connectedTile = null)
         {
             ID = NextID++;
             ParentTile = parent;

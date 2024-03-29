@@ -14,14 +14,12 @@ namespace MyTestMod.Harmony.HighwayPlanner
         private static readonly List<ExitConnection> ExitConnections = new List<ExitConnection>();
         private static Path GetPathToTownshipResult;
 
-#pragma warning disable IDE0051 // Remove unused private members
+        [HarmonyPrefix]
         private static bool Prefix(int worldSeed, ref IEnumerator __result)
-#pragma warning restore IDE0051 // Remove unused private members
         {
             Log.Out("[MyTestMod] HighwayPlanner Generating Plan");
 
-            IEnumerator plan = NewPlanMethod(worldSeed);
-            __result = plan;
+            __result = NewPlanMethod(worldSeed);
 
             return false;
         }
@@ -37,7 +35,7 @@ namespace MyTestMod.Harmony.HighwayPlanner
                 Township township = WorldGenerationEngineFinal.WorldBuilder.Instance.Townships[i];
                 for (int j = 0; j < township.Gateways.Count; j++)
                 {
-                    StreetTile gateway = township.Gateways[j];
+                    WorldGenerationEngineFinal.StreetTile gateway = township.Gateways[j];
                     gateway.SetAllExistingNeighborsForGateway();
                 }
             }
@@ -105,7 +103,7 @@ namespace MyTestMod.Harmony.HighwayPlanner
 
         private static void ProcessGateways(Township township, ref List<Vector2i> tilesToRemove, ref List<Path> pathsToRemove)
         {
-            foreach (StreetTile gateway in township.Gateways)
+            foreach (WorldGenerationEngineFinal.StreetTile gateway in township.Gateways)
             {
                 for (int index = 0; index < 4; ++index)
                 {
@@ -118,14 +116,14 @@ namespace MyTestMod.Harmony.HighwayPlanner
                 {
                     for (int index = 0; index < 4; ++index)
                     {
-                        StreetTile neighborByIndex = gateway.GetNeighborByIndex(index);
+                        WorldGenerationEngineFinal.StreetTile neighborByIndex = gateway.GetNeighborByIndex(index);
                         gateway.SetExitUnUsed(gateway.getHighwayExitPosition(index));
                         if (neighborByIndex.Township == gateway.Township)
                             neighborByIndex.SetExitUnUsed(neighborByIndex.getHighwayExitPosition(neighborByIndex.GetNeighborIndex(gateway)));
                     }
                     foreach (Path connectedHighway in gateway.ConnectedHighways)
                     {
-                        StreetTile streetTileWorld;
+                        WorldGenerationEngineFinal.StreetTile streetTileWorld;
                         if (WorldGenerationEngineFinal.WorldBuilder.Instance.GetStreetTileWorld(connectedHighway.StartPosition) == gateway)
                         {
                             streetTileWorld = WorldGenerationEngineFinal.WorldBuilder.Instance.GetStreetTileWorld(connectedHighway.EndPosition);
@@ -159,7 +157,7 @@ namespace MyTestMod.Harmony.HighwayPlanner
         {
             foreach (Vector2i vector2i in tilesToRemove)
             {
-                StreetTile streetTileGrid = WorldGenerationEngineFinal.WorldBuilder.Instance.GetStreetTileGrid(vector2i);
+                WorldGenerationEngineFinal.StreetTile streetTileGrid = WorldGenerationEngineFinal.WorldBuilder.Instance.GetStreetTileGrid(vector2i);
                 if (streetTileGrid.Township != null)
                 {
                     streetTileGrid.Township.Gateways.Remove(streetTileGrid);
@@ -182,12 +180,12 @@ namespace MyTestMod.Harmony.HighwayPlanner
                     return;
                 }
 
-                foreach (StreetTile gateway in highwayTownship.Gateways)
+                foreach (WorldGenerationEngineFinal.StreetTile gateway in highwayTownship.Gateways)
                 {
                     HashSet<Vector2i> usedExitSet = new HashSet<Vector2i>(gateway.UsedExitList);
                     for (int index = 0; index < 4; ++index)
                     {
-                        StreetTile neighborByIndex = gateway.GetNeighborByIndex(index);
+                        WorldGenerationEngineFinal.StreetTile neighborByIndex = gateway.GetNeighborByIndex(index);
                         Vector2i highwayExitPosition = gateway.getHighwayExitPosition(index);
                         if (!usedExitSet.Contains(highwayExitPosition) && (neighborByIndex.Township != gateway.Township || !neighborByIndex.HasExitTo(gateway)))
                             gateway.SetExitUnUsed(highwayExitPosition);
@@ -209,14 +207,14 @@ namespace MyTestMod.Harmony.HighwayPlanner
 
             System.Threading.Tasks.Parallel.ForEach(townships, town =>
             {
-                foreach (StreetTile streetTile in town.Streets.Values)
+                foreach (WorldGenerationEngineFinal.StreetTile streetTile in town.Streets.Values)
                 {
                     if (streetTile.GetNumTownshipNeighbors() == 1)
                     {
                         int num = -1;
                         for (int idx = 0; idx < 4; ++idx)
                         {
-                            StreetTile neighborByIndex = streetTile.GetNeighborByIndex(idx);
+                            WorldGenerationEngineFinal.StreetTile neighborByIndex = streetTile.GetNeighborByIndex(idx);
                             if (neighborByIndex != null && neighborByIndex.Township == streetTile.Township)
                             {
                                 num = idx;
@@ -272,7 +270,7 @@ namespace MyTestMod.Harmony.HighwayPlanner
                 Path path1 = new Path(exit, closestPoint, 2, true, true, false, false);
                 if (path1.IsValid)
                 {
-                    foreach (StreetTile streetTile in township.Streets.Values)
+                    foreach (WorldGenerationEngineFinal.StreetTile streetTile in township.Streets.Values)
                     {
                         for (int index = 0; index < 4; ++index)
                         {
@@ -365,7 +363,7 @@ namespace MyTestMod.Harmony.HighwayPlanner
 
         private static void SetTileExit(Path currentPath, Vector2i exit)
         {
-            StreetTile parent = WorldGenerationEngineFinal.WorldBuilder.Instance.GetStreetTileWorld(exit);
+            WorldGenerationEngineFinal.StreetTile parent = WorldGenerationEngineFinal.WorldBuilder.Instance.GetStreetTileWorld(exit);
             if (parent != null)
             {
                 if (parent.District != null && parent.District.name == "gateway")
@@ -373,7 +371,7 @@ namespace MyTestMod.Harmony.HighwayPlanner
                     ExitConnections.Add(new ExitConnection(parent, exit, currentPath));
                     return;
                 }
-                foreach (StreetTile neighbor in parent.GetNeighbors())
+                foreach (WorldGenerationEngineFinal.StreetTile neighbor in parent.GetNeighbors())
                 {
                     if (neighbor != null && neighbor.District != null && neighbor.District.name == "gateway")
                     {
@@ -396,7 +394,7 @@ namespace MyTestMod.Harmony.HighwayPlanner
             }
             if (township1 == null)
                 return;
-            foreach (StreetTile gateway in township1.Gateways)
+            foreach (WorldGenerationEngineFinal.StreetTile gateway in township1.Gateways)
             {
                 for (int index = 0; index < 4; ++index)
                 {
