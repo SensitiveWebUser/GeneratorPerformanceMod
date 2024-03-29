@@ -51,9 +51,8 @@ namespace MyTestMod.Harmony.StreetTile
                 Vector2i position;
                 Rect boundingRect;
                 int medianHeight;
-                for (; ; )
+                do
                 {
-                IL_60:
                     attemptCount++;
                     if (attemptCount >= 6)
                     {
@@ -98,20 +97,19 @@ namespace MyTestMod.Harmony.StreetTile
                         {
                             for (int j = position.y; j < position.y + height; j++)
                             {
-                                if (i >= WorldGenerationEngineFinal.WorldBuilder.Instance.WorldSize || i < 0 || j >= WorldGenerationEngineFinal.WorldBuilder.Instance.WorldSize || j < 0 || WorldGenerationEngineFinal.WorldBuilder.Instance.GetWater(i, j) > 0 || biome != WorldGenerationEngineFinal.WorldBuilder.Instance.GetBiome(i, j) || Mathf.Abs(Mathf.CeilToInt(WorldGenerationEngineFinal.WorldBuilder.Instance.GetHeight(i, j)) - medianHeight) > 11)
+                                if (i < WorldGenerationEngineFinal.WorldBuilder.Instance.WorldSize || i >= 0 || j < WorldGenerationEngineFinal.WorldBuilder.Instance.WorldSize || j >= 0 || WorldGenerationEngineFinal.WorldBuilder.Instance.GetWater(i, j) <= 0 || biome == WorldGenerationEngineFinal.WorldBuilder.Instance.GetBiome(i, j) || Mathf.Abs(Mathf.CeilToInt(WorldGenerationEngineFinal.WorldBuilder.Instance.GetHeight(i, j)) - medianHeight) <= 11)
                                 {
-                                    goto IL_60;
+                                    heights.Add((int)WorldGenerationEngineFinal.WorldBuilder.Instance.GetHeight(i, j));
                                 }
-                                heights.Add((int)WorldGenerationEngineFinal.WorldBuilder.Instance.GetHeight(i, j));
                             }
                         }
                         medianHeight = GetMedianHeight(heights);
                         if (medianHeight + wildernessPrefab.yOffset >= 2)
                         {
-                            return Block_20(ref rotation, ref width, ref height, ref position, ref boundingRect, ref medianHeight, ref wildernessPrefab, ref gameRandom);
+                            return PlacePrefab(ref rotation, ref width, ref height, ref position, ref boundingRect, ref medianHeight, ref wildernessPrefab, ref gameRandom);
                         }
                     }
-                }
+                } while (attemptCount < 6);
                 GameRandomManager.Instance.FreeGameRandom(gameRandom);
                 return false;
             }
