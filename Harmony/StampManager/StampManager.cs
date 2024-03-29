@@ -31,15 +31,15 @@ namespace MyTestMod.Harmony.StampManager
             {
                 if (_center)
                 {
-                    _x -= (int)((float)_srcWidth * _scale) / 2;
-                    _y -= (int)((float)_srcHeight * _scale) / 2;
+                    _x -= (int)(_srcWidth * _scale) / 2;
+                    _y -= (int)(_srcHeight * _scale) / 2;
                 }
 
                 double num = Math.PI / 180.0 * (double)_angle;
                 double sine = Math.Sin(num);
                 double cosine = Math.Cos(num);
-                int num2 = Mathf.FloorToInt((float)(((int)Mathf.Sqrt(_srcWidth * _srcWidth + _srcHeight * _srcHeight) - _srcWidth) / 2) * _scale);
-                int num3 = Mathf.FloorToInt((float)_srcWidth * _scale + (float)num2);
+                int num2 = Mathf.FloorToInt(((int)Mathf.Sqrt(_srcWidth * _srcWidth + _srcHeight * _srcHeight) - _srcWidth) / 2 * _scale);
+                int num3 = Mathf.FloorToInt(_srcWidth * _scale + num2);
                 num2 = -num2;
                 int num4 = num2;
                 int num5 = _x + num2;
@@ -72,7 +72,7 @@ namespace MyTestMod.Harmony.StampManager
                 for (int i = num7; i < num9; i++)
                 {
                     int num10 = (_y + i) * _destWidth;
-                    float y = (float)i / _scale;
+                    float y = i / _scale;
                     for (int j = num4; j < num6; j++)
                     {
                         int num11 = _x + j + num10;
@@ -81,7 +81,7 @@ namespace MyTestMod.Harmony.StampManager
                             continue;
                         }
 
-                        Color rotatedColor = GetRotatedColor((float)j / _scale, y, _src, sine, cosine, _srcWidth, _srcHeight, isWater);
+                        Color rotatedColor = GetRotatedColor(j / _scale, y, _src, sine, cosine, _srcWidth, _srcHeight, isWater);
                         if (rotatedColor.r + rotatedColor.g + rotatedColor.b + rotatedColor.a < 1E-05f)
                         {
                             continue;
