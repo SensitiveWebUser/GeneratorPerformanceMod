@@ -23,8 +23,6 @@ namespace MyTestMod.Harmony.StreetTile
             [HarmonyPrefix]
             private static bool Prefix(WorldGenerationEngineFinal.StreetTile __instance, ref bool __result, ref Vector2i ___WildernessPOICenter, ref int ___WildernessPOISize, ref int ___WildernessPOIHeight, ref POITags ___traderTag, ref POITags ___wildernessTag)
             {
-                Log.Out("[MyTestMod] StreetTile.spawnWildernessPrefab Prefix");
-
                 streetTile = __instance;
                 WildernessPOICenter = ___WildernessPOICenter;
                 WildernessPOISize = ___WildernessPOISize;
@@ -41,9 +39,8 @@ namespace MyTestMod.Harmony.StreetTile
             {
                 GameRandom gameRandom = GameRandomManager.Instance.CreateGameRandom(WorldGenerationEngineFinal.WorldBuilder.Instance.Seed + 4096953);
                 POITags poiTags = (WorldGenerationEngineFinal.WorldBuilder.Instance.Towns == WorldGenerationEngineFinal.WorldBuilder.GenerationSelections.None) ? POITags.none : traderTag;
-                POITags noTags = POITags.none;
                 Vector2i centerPosition = streetTile.WorldPositionCenter;
-                PrefabData wildernessPrefab = PrefabManager.GetWildernessPrefab(poiTags, noTags, default(Vector2i), default(Vector2i), false, centerPosition);
+                PrefabData wildernessPrefab = PrefabManager.GetWildernessPrefab(poiTags, POITags.none, default(Vector2i), default(Vector2i), false, centerPosition);
                 int attemptCount = -1;
                 int rotation;
                 int width;
@@ -51,6 +48,8 @@ namespace MyTestMod.Harmony.StreetTile
                 Vector2i position;
                 Rect boundingRect;
                 int medianHeight;
+                int worldSize = WorldGenerationEngineFinal.WorldBuilder.Instance.WorldSize; // Cache world size
+
                 do
                 {
                     attemptCount++;
@@ -59,59 +58,71 @@ namespace MyTestMod.Harmony.StreetTile
                         break;
                     }
                     rotation = (wildernessPrefab.RotationsToNorth + gameRandom.RandomRange(0, 12)) % 4;
-                    width = wildernessPrefab.size.x;
-                    height = wildernessPrefab.size.z;
-                    if (rotation == 1 || rotation == 3)
-                    {
-                        width = wildernessPrefab.size.z;
-                        height = wildernessPrefab.size.x;
-                    }
-                    if (width > 150 || height > 150)
-                    {
-                        position = streetTile.WorldPositionCenter - new Vector2i((width - 150) / 2, (height - 150) / 2);
-                    }
-                    else
-                    {
-                        try
-                        {
-                            position = new Vector2i(gameRandom.RandomRange(streetTile.WorldPosition.x + 10, streetTile.WorldPosition.x + 150 - width - 10), gameRandom.RandomRange(streetTile.WorldPosition.y + 10, streetTile.WorldPosition.y + 150 - height - 10));
-                        }
-                        catch
-                        {
-                            position = streetTile.WorldPositionCenter - new Vector2i(width / 2, height / 2);
-                        }
-                    }
-                    int maxDimension = (width > height) ? width : height;
+                    width = (rotation == 1 || rotation == 3) ? wildernessPrefab.size.z : wildernessPrefab.size.x;
+                    height = (rotation == 1 || rotation == 3) ? wildernessPrefab.size.x : wildernessPrefab.size.z;
+
+                    position = CalculatePosition(width, height, gameRandom);
+                    int maxDimension = Math.Max(width, height);
                     boundingRect = new Rect(position.x, position.y, maxDimension, maxDimension);
-                    new Rect(boundingRect.min - new Vector2(maxDimension, maxDimension) / 2f, boundingRect.size + new Vector2(maxDimension, maxDimension));
                     Rect extendedRect = new Rect(boundingRect.min - new Vector2(maxDimension, maxDimension) / 2f, boundingRect.size + new Vector2(maxDimension, maxDimension))
                     {
                         center = new Vector2(position.x + height / 2, position.y + width / 2)
                     };
-                    if (extendedRect.max.x < WorldGenerationEngineFinal.WorldBuilder.Instance.WorldSize && extendedRect.min.x >= 0f && extendedRect.max.y < WorldGenerationEngineFinal.WorldBuilder.Instance.WorldSize && extendedRect.min.y >= 0f)
+
+                    if (extendedRect.max.x < worldSize && extendedRect.min.x >= 0f && extendedRect.max.y < worldSize && extendedRect.min.y >= 0f)
                     {
                         BiomeType biome = WorldGenerationEngineFinal.WorldBuilder.Instance.GetBiome((int)boundingRect.center.x, (int)boundingRect.center.y);
                         medianHeight = Mathf.CeilToInt(WorldGenerationEngineFinal.WorldBuilder.Instance.GetHeight((int)boundingRect.center.x, (int)boundingRect.center.y));
-                        List<int> heights = new List<int>();
-                        for (int i = position.x; i < position.x + width; i++)
+                        List<int> heights = GetHeights(position, width, height, biome, medianHeight, worldSize);
+
+                        if (heights.Count > 0)
                         {
-                            for (int j = position.y; j < position.y + height; j++)
+                            medianHeight = GetMedianHeight(heights);
+                            if (medianHeight + wildernessPrefab.yOffset >= 2)
                             {
-                                if (i < WorldGenerationEngineFinal.WorldBuilder.Instance.WorldSize || i >= 0 || j < WorldGenerationEngineFinal.WorldBuilder.Instance.WorldSize || j >= 0 || WorldGenerationEngineFinal.WorldBuilder.Instance.GetWater(i, j) <= 0 || biome == WorldGenerationEngineFinal.WorldBuilder.Instance.GetBiome(i, j) || Mathf.Abs(Mathf.CeilToInt(WorldGenerationEngineFinal.WorldBuilder.Instance.GetHeight(i, j)) - medianHeight) <= 11)
-                                {
-                                    heights.Add((int)WorldGenerationEngineFinal.WorldBuilder.Instance.GetHeight(i, j));
-                                }
+                                return PlacePrefab(ref rotation, ref width, ref height, ref position, ref boundingRect, ref medianHeight, ref wildernessPrefab, ref gameRandom);
                             }
-                        }
-                        medianHeight = GetMedianHeight(heights);
-                        if (medianHeight + wildernessPrefab.yOffset >= 2)
-                        {
-                            return PlacePrefab(ref rotation, ref width, ref height, ref position, ref boundingRect, ref medianHeight, ref wildernessPrefab, ref gameRandom);
                         }
                     }
                 } while (attemptCount < 6);
+
                 GameRandomManager.Instance.FreeGameRandom(gameRandom);
                 return false;
+            }
+
+            private static Vector2i CalculatePosition(int width, int height, GameRandom gameRandom)
+            {
+                if (width > 150 || height > 150)
+                {
+                    return streetTile.WorldPositionCenter - new Vector2i((width - 150) / 2, (height - 150) / 2);
+                }
+                else
+                {
+                    try
+                    {
+                        return new Vector2i(gameRandom.RandomRange(streetTile.WorldPosition.x + 10, streetTile.WorldPosition.x + 150 - width - 10), gameRandom.RandomRange(streetTile.WorldPosition.y + 10, streetTile.WorldPosition.y + 150 - height - 10));
+                    }
+                    catch
+                    {
+                        return streetTile.WorldPositionCenter - new Vector2i(width / 2, height / 2);
+                    }
+                }
+            }
+
+            private static List<int> GetHeights(Vector2i position, int width, int height, BiomeType biome, int medianHeight, int worldSize)
+            {
+                List<int> heights = new List<int>();
+                for (int i = position.x; i < position.x + width; i++)
+                {
+                    for (int j = position.y; j < position.y + height; j++)
+                    {
+                        if (i < worldSize || i >= 0 || j < worldSize || j >= 0 || WorldGenerationEngineFinal.WorldBuilder.Instance.GetWater(i, j) <= 0 || biome == WorldGenerationEngineFinal.WorldBuilder.Instance.GetBiome(i, j) || Mathf.Abs(Mathf.CeilToInt(WorldGenerationEngineFinal.WorldBuilder.Instance.GetHeight(i, j)) - medianHeight) <= 11)
+                        {
+                            heights.Add((int)WorldGenerationEngineFinal.WorldBuilder.Instance.GetHeight(i, j));
+                        }
+                    }
+                }
+                return heights;
             }
 
             private static bool PlacePrefab(ref int rotation, ref int width, ref int height, ref Vector2i position, ref Rect boundingRect, ref int medianHeight, ref PrefabData wildernessPrefab, ref GameRandom gameRandom)
