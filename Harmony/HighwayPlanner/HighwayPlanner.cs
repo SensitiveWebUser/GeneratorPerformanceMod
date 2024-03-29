@@ -18,7 +18,7 @@ namespace MyTestMod.Harmony.HighwayPlanner
         private static bool Prefix(int worldSeed, ref IEnumerator __result)
 #pragma warning restore IDE0051 // Remove unused private members
         {
-            Log.Out("[MOD] HighwayPlanner Generating Plan");
+            Log.Out("[MyTestMod] HighwayPlanner Generating Plan");
 
             IEnumerator plan = NewPlanMethod(worldSeed);
             __result = plan;
