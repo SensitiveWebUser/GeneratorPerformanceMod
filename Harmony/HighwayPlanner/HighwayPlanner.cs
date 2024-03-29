@@ -58,7 +58,7 @@ namespace MyTestMod.Harmony.HighwayPlanner
             for (; currentTownshipNode != null; currentTownshipNode = currentTownshipNode.next)
             {
                 if (currentTownshipNode.Path != null)
-                     WorldGenerationEngineFinal.WorldBuilder.Instance.paths.Add(currentTownshipNode.Path);
+                    WorldGenerationEngineFinal.WorldBuilder.Instance.paths.Add(currentTownshipNode.Path);
                 if (currentTownshipNode.next == null)
                     break;
             }
@@ -105,41 +105,68 @@ namespace MyTestMod.Harmony.HighwayPlanner
         {
             foreach (WorldGenerationEngineFinal.StreetTile gateway in township.Gateways)
             {
-                for (int index = 0; index < 4; ++index)
-                {
-                    gateway.GetNeighborByIndex(index);
-                    Vector2i highwayExitPosition = gateway.getHighwayExitPosition(index);
-                    if (!gateway.UsedExitList.Contains(highwayExitPosition))
-                        gateway.SetExitUnUsed(highwayExitPosition);
-                }
+                SetGatewayExitsAsUnused(gateway);
                 if (gateway.UsedExitList.Count < 2)
                 {
-                    for (int index = 0; index < 4; ++index)
-                    {
-                        WorldGenerationEngineFinal.StreetTile neighborByIndex = gateway.GetNeighborByIndex(index);
-                        gateway.SetExitUnUsed(gateway.getHighwayExitPosition(index));
-                        if (neighborByIndex.Township == gateway.Township)
-                            neighborByIndex.SetExitUnUsed(neighborByIndex.getHighwayExitPosition(neighborByIndex.GetNeighborIndex(gateway)));
-                    }
-                    foreach (Path connectedHighway in gateway.ConnectedHighways)
-                    {
-                        WorldGenerationEngineFinal.StreetTile streetTileWorld;
-                        if (WorldGenerationEngineFinal.WorldBuilder.Instance.GetStreetTileWorld(connectedHighway.StartPosition) == gateway)
-                        {
-                            streetTileWorld = WorldGenerationEngineFinal.WorldBuilder.Instance.GetStreetTileWorld(connectedHighway.EndPosition);
-                            streetTileWorld.SetExitUnUsed(connectedHighway.EndPosition);
-                        }
-                        else
-                        {
-                            streetTileWorld = WorldGenerationEngineFinal.WorldBuilder.Instance.GetStreetTileWorld(connectedHighway.StartPosition);
-                            streetTileWorld.SetExitUnUsed(connectedHighway.StartPosition);
-                        }
-                        if (streetTileWorld.UsedExitList.Count < 2)
-                            tilesToRemove.Add(streetTileWorld.GridPosition);
-                        pathsToRemove.Add(connectedHighway);
-                    }
+                    DisconnectGatewayFromNeighbors(gateway);
+                    DisconnectGatewayFromHighways(gateway, tilesToRemove, pathsToRemove);
                     tilesToRemove.Add(gateway.GridPosition);
                 }
+            }
+        }
+
+        private static void SetGatewayExitsAsUnused(WorldGenerationEngineFinal.StreetTile gateway)
+        {
+            const int NumberOfExits = 4;
+
+            for (int index = 0; index < NumberOfExits; ++index)
+            {
+                Vector2i highwayExitPosition = gateway.getHighwayExitPosition(index);
+                if (!gateway.UsedExitList.Contains(highwayExitPosition))
+                {
+                    gateway.SetExitUnUsed(highwayExitPosition);
+                }
+            }
+        }
+
+        private static void DisconnectGatewayFromNeighbors(WorldGenerationEngineFinal.StreetTile gateway)
+        {
+            const int NumberOfNeighbors = 4;
+
+            for (int index = 0; index < NumberOfNeighbors; ++index)
+            {
+                WorldGenerationEngineFinal.StreetTile neighbor = gateway.GetNeighborByIndex(index);
+                Vector2i gatewayExitPosition = gateway.getHighwayExitPosition(index);
+                gateway.SetExitUnUsed(gatewayExitPosition);
+
+                if (neighbor.Township == gateway.Township)
+                {
+                    Vector2i neighborExitPosition = neighbor.getHighwayExitPosition(neighbor.GetNeighborIndex(gateway));
+                    neighbor.SetExitUnUsed(neighborExitPosition);
+                }
+            }
+        }
+
+        private static void DisconnectGatewayFromHighways(WorldGenerationEngineFinal.StreetTile gateway, List<Vector2i> tilesToRemove, List<Path> pathsToRemove)
+        {
+            foreach (Path connectedHighway in gateway.ConnectedHighways)
+            {
+                WorldGenerationEngineFinal.StreetTile streetTileWorld;
+                if (WorldGenerationEngineFinal.WorldBuilder.Instance.GetStreetTileWorld(connectedHighway.StartPosition) == gateway)
+                {
+                    streetTileWorld = WorldGenerationEngineFinal.WorldBuilder.Instance.GetStreetTileWorld(connectedHighway.EndPosition);
+                    streetTileWorld.SetExitUnUsed(connectedHighway.EndPosition);
+                }
+                else
+                {
+                    streetTileWorld = WorldGenerationEngineFinal.WorldBuilder.Instance.GetStreetTileWorld(connectedHighway.StartPosition);
+                    streetTileWorld.SetExitUnUsed(connectedHighway.StartPosition);
+                }
+                if (streetTileWorld.UsedExitList.Count < 2)
+                {
+                    tilesToRemove.Add(streetTileWorld.GridPosition);
+                }
+                pathsToRemove.Add(connectedHighway);
             }
         }
 

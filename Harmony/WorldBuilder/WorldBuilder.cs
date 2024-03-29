@@ -327,21 +327,32 @@ namespace MyTestMod.Harmony.WorldBuilder
                 return Task.Run(delegate ()
                 {
                     GameRandom gameRandom = GameRandomManager.Instance.CreateGameRandom(worldBuilder.Seed + 20);
+                    int worldTileSize = worldBuilder.WorldTileSize;
+                    int worldTileSizeHalf = worldTileSize / 2;
+                    int worldSize = worldBuilder.WorldSize;
+                    float scale = worldTileSize / 1024f * 4f;
+
                     for (int l = 0; l < worldTileCountWide; l++)
                     {
+                        int xOffset = 256 + l * worldTileSize + worldTileSizeHalf;
+
                         for (int m = 0; m < worldTileCountWide; m++)
                         {
+                            int yOffset = 256 + m * worldTileSize + worldTileSizeHalf;
                             BiomeType biomeType = worldBuilder.biomeMap.data[l, m];
+
                             if (biomeType == BiomeType.none)
                             {
                                 biomeType = GetBiomeViaNeighbors(l, m, biomeType);
                             }
                             else
                             {
-                                StampManager.DrawStamp(biomeDest, fillerBiome.terrainPixels, 256 + l * worldBuilder.WorldTileSize + worldBuilder.WorldTileSize / 2, 256 + m * worldBuilder.WorldTileSize + worldBuilder.WorldTileSize / 2, worldBuilder.WorldSize, worldBuilder.WorldSize, fillerBiome.width, fillerBiome.height, 1f, worldBuilder.WorldTileSize / 1024f * 4f, true, true, biomeColors[biomeType], 0.1f, gameRandom.RandomRange(0, 4) * 90, false, false);
+                                int rotation = gameRandom.RandomRange(0, 4) * 90;
+                                StampManager.DrawStamp(biomeDest, fillerBiome.terrainPixels, xOffset, yOffset, worldSize, worldSize, fillerBiome.width, fillerBiome.height, 1f, scale, true, true, biomeColors[biomeType], 0.1f, rotation, false, false);
                             }
                         }
                     }
+
                     GameRandomManager.Instance.FreeGameRandom(gameRandom);
                 });
             }
