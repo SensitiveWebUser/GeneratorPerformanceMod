@@ -35,48 +35,49 @@ namespace MyTestMod.Harmony.StampManager
                     _y -= (int)(_srcHeight * _scale) / 2;
                 }
 
-                double num = Math.PI / 180.0 * (double)_angle;
-                double sine = Math.Sin(num);
-                double cosine = Math.Cos(num);
-                int num2 = Mathf.FloorToInt(((int)Mathf.Sqrt(_srcWidth * _srcWidth + _srcHeight * _srcHeight) - _srcWidth) / 2 * _scale);
-                int num3 = Mathf.FloorToInt(_srcWidth * _scale + num2);
-                num2 = -num2;
-                int num4 = num2;
-                int num5 = _x + num2;
-                if (num5 < 0)
+                double angleInRadians = Math.PI / 180.0 * _angle;
+                double sine = Math.Sin(angleInRadians);
+                double cosine = Math.Cos(angleInRadians);
+                int offset = Mathf.FloorToInt(((int)Mathf.Sqrt(_srcWidth * _srcWidth + _srcHeight * _srcHeight) - _srcWidth) / 2 * _scale);
+                int scaledSrcWidth = Mathf.FloorToInt(_srcWidth * _scale + offset);
+                offset = -offset;
+
+                int startX = offset;
+                int xPosition = _x + offset;
+                if (xPosition < 0)
                 {
-                    num4 -= num5;
+                    startX -= xPosition;
                 }
 
-                int num6 = num3;
-                num5 = _x + num3;
-                if (num5 >= _destWidth)
+                int endX = scaledSrcWidth;
+                xPosition = _x + scaledSrcWidth;
+                if (xPosition >= _destWidth)
                 {
-                    num6 -= num5 - _destWidth;
+                    endX -= xPosition - _destWidth;
                 }
 
-                int num7 = num2;
-                int num8 = _y + num2;
-                if (num8 < 0)
+                int startY = offset;
+                int yPosition = _y + offset;
+                if (yPosition < 0)
                 {
-                    num7 -= num8;
+                    startY -= yPosition;
                 }
 
-                int num9 = num3;
-                num8 = _y + num3;
-                if (num8 >= _destHeight)
+                int endY = scaledSrcWidth;
+                yPosition = _y + scaledSrcWidth;
+                if (yPosition >= _destHeight)
                 {
-                    num9 -= num8 - _destHeight;
+                    endY -= yPosition - _destHeight;
                 }
 
-                for (int i = num7; i < num9; i++)
+                for (int i = startY; i < endY; i++)
                 {
-                    int num10 = (_y + i) * _destWidth;
+                    int destIndex = (_y + i) * _destWidth;
                     float y = i / _scale;
-                    for (int j = num4; j < num6; j++)
+                    for (int j = startX; j < endX; j++)
                     {
-                        int num11 = _x + j + num10;
-                        if (isWater && _dest[num11].b > 0f)
+                        int index = _x + j + destIndex;
+                        if (isWater && _dest[index].b > 0f)
                         {
                             continue;
                         }
@@ -91,11 +92,11 @@ namespace MyTestMod.Harmony.StampManager
                         {
                             if (_colorOverride)
                             {
-                                _dest[num11] = _color;
+                                _dest[index] = _color;
                             }
                             else
                             {
-                                _dest[num11] = rotatedColor;
+                                _dest[index] = rotatedColor;
                             }
 
                             continue;
@@ -105,18 +106,18 @@ namespace MyTestMod.Harmony.StampManager
                         {
                             if (rotatedColor.a > _biomeCutoff)
                             {
-                                _dest[num11] = _color;
+                                _dest[index] = _color;
                             }
 
                             continue;
                         }
 
-                        float num12 = rotatedColor.a * _alpha;
-                        Color color = _dest[num11];
-                        color.r += (rotatedColor.r - color.r) * num12;
-                        color.g += (rotatedColor.g - color.g) * num12;
-                        color.b += (rotatedColor.b - color.b) * num12;
-                        _dest[num11] = color;
+                        float alphaFactor = rotatedColor.a * _alpha;
+                        Color color = _dest[index];
+                        color.r += (rotatedColor.r - color.r) * alphaFactor;
+                        color.g += (rotatedColor.g - color.g) * alphaFactor;
+                        color.b += (rotatedColor.b - color.b) * alphaFactor;
+                        _dest[index] = color;
                     }
                 }
             }
