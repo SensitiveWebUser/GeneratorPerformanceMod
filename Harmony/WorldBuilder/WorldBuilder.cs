@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
 using WorldGenerationEngineFinal;
@@ -41,60 +42,54 @@ namespace MyTestMod.Harmony.WorldBuilder
 
             private static IEnumerator NewGenerateMountainsMethod()
             {
-                int widthInTiles = worldBuilder.WorldSize / worldBuilder.WorldTileSize;
-                int t = 0;
-                int num2;
-                for (int tileX = 0; tileX < widthInTiles; tileX = num2 + 1)
+                int worldWidthInTiles = worldBuilder.WorldSize / worldBuilder.WorldTileSize;
+                int progressCounter = 0;
+                int halfWorldTileSize = worldBuilder.WorldTileSize / 2;
+                StringBuilder comboTypeNameBuilder = new StringBuilder();
+                for (int tileX = 0; tileX < worldWidthInTiles; ++tileX)
                 {
-                    for (int tileY = 0; tileY < widthInTiles; tileY = num2 + 1)
+                    for (int tileY = 0; tileY < worldWidthInTiles; ++tileY)
                     {
                         if (worldBuilder.IsMessageElapsed())
                         {
-                            string format = "Generating Terrain: {0}%";
-                            float num = 100f;
-                            num2 = t;
-                            t = num2 + 1;
-                            yield return worldBuilder.SetMessage(string.Format(format, Mathf.FloorToInt(num * (num2 / (float)(widthInTiles * widthInTiles)))), false);
+                            string progressMessage = "Generating Terrain: {0}%";
+                            yield return worldBuilder.SetMessage(string.Format(progressMessage, Mathf.FloorToInt(100f * (progressCounter++ / (float)(worldWidthInTiles * worldWidthInTiles)))), false);
                         }
-                        TerrainType terrainType = worldBuilder.terrainTypeMap.data[tileX, tileY];
-                        if (terrainType == TerrainType.mountains || terrainType == TerrainType.plains)
+                        TerrainType currentTerrainType = worldBuilder.terrainTypeMap.data[tileX, tileY];
+                        if (currentTerrainType == TerrainType.mountains || currentTerrainType == TerrainType.plains)
                         {
-                            BiomeType biomeType = worldBuilder.biomeMap.data[tileX, tileY];
-                            if (biomeType == BiomeType.none)
+                            BiomeType currentBiomeType = worldBuilder.biomeMap.data[tileX, tileY];
+                            if (currentBiomeType == BiomeType.none)
                             {
-                                biomeType = BiomeType.forest;
+                                currentBiomeType = BiomeType.forest;
                             }
-                            int num3 = tileX * worldBuilder.WorldTileSize + worldBuilder.WorldTileSize / 2;
-                            int num4 = tileY * worldBuilder.WorldTileSize + worldBuilder.WorldTileSize / 2;
-                            string text = biomeType.ToStringCached();
-                            string text2 = terrainType.ToStringCached();
-                            string comboTypeName = string.Format("{0}_{1}", text, text2);
-                            GetTerrainProperties(text, text2, comboTypeName, out Vector2 vector, out bool flag, out int num5, out int num6, out float biomeAlphaCutoff);
-                            for (int i = 0; i < num5; i++)
+                            string biomeTypeName = currentBiomeType.ToStringCached();
+                            string terrainTypeName = currentTerrainType.ToStringCached();
+                            comboTypeNameBuilder.Clear();
+                            comboTypeNameBuilder.Append(biomeTypeName).Append('_').Append(terrainTypeName);
+                            string comboTypeName = comboTypeNameBuilder.ToString();
+                            GetTerrainProperties(biomeTypeName, terrainTypeName, comboTypeName, out Vector2 scale, out bool useBiomeMask, out int clusterIterations, out int clusterRange, out float biomeAlphaCutoff);
+                            int centerX = tileX * worldBuilder.WorldTileSize + halfWorldTileSize;
+                            int centerY = tileY * worldBuilder.WorldTileSize + halfWorldTileSize;
+                            for (int i = 0; i < clusterIterations; i++)
                             {
-                                if (StampManager.TryGetStamp(text2, comboTypeName, out RawStamp rawStamp))
+                                if (StampManager.TryGetStamp(terrainTypeName, comboTypeName, out RawStamp rawStamp))
                                 {
-                                    TranslationData translationData = new TranslationData(num3 + Rand.Instance.Range(-(num6 / 2), num6 / 2, false), num4 + Rand.Instance.Range(-(num6 / 2), num6 / 2, false), true, vector.x, vector.y, true, 0);
+                                    TranslationData translationData = new TranslationData(centerX + Rand.Instance.Range(-(clusterRange / 2), clusterRange / 2, false), centerY + Rand.Instance.Range(-(clusterRange / 2), clusterRange / 2, false), true, scale.x, scale.y, true, 0);
                                     List<Stamp> stamps = terrainLayer.Stamps;
-                                    RawStamp stamp = rawStamp;
-                                    TranslationData transData = translationData;
-                                    bool isCustomColor = false;
-                                    string name = rawStamp.name;
-                                    stamps.Add(new Stamp(stamp, transData, isCustomColor, default, 0.1f, false, name));
+                                    stamps.Add(new Stamp(rawStamp, translationData, false, default, 0.1f, false, rawStamp.name));
                                     if (rawStamp.hasWater)
                                     {
                                         waterLayer.Stamps.Add(new Stamp(rawStamp, translationData, false, default, 0.1f, true, ""));
                                     }
-                                    if (flag)
+                                    if (useBiomeMask)
                                     {
-                                        biomeLayer.Stamps.Add(new Stamp(rawStamp, translationData, true, biomeColors[biomeType], biomeAlphaCutoff, false, ""));
+                                        biomeLayer.Stamps.Add(new Stamp(rawStamp, translationData, true, biomeColors[currentBiomeType], biomeAlphaCutoff, false, ""));
                                     }
                                 }
                             }
                         }
-                        num2 = tileY;
                     }
-                    num2 = tileX;
                 }
                 yield break;
             }
@@ -228,116 +223,12 @@ namespace MyTestMod.Harmony.WorldBuilder
 
             private static IEnumerator NewGenerateBaseStampsMethod(MicroStopwatch ms)
             {
-                RawStamp fillerBiome = StampManager.GetStamp("filler_biome");
                 StampManager.GetStamp("base").blendAmount = 0.25f;
-                int worldTileCountWide = worldBuilder.WorldSize / worldBuilder.WorldTileSize;
 
                 SettingColours();
 
-                Task terrainBorderTask = Task.Run(delegate ()
-                {
-                    Vector2 vector = new Vector2(1.5f, 3.5f);
-                    string @string = thisWorldProperties.GetString("border.scale");
-                    if (@string != string.Empty)
-                    {
-                        vector = StringParsers.ParseVector2(@string);
-                    }
-                    int num = 512;
-                    if ((@string = thisWorldProperties.GetString("border_step_distance")) != string.Empty)
-                    {
-                        num = StringParsers.ParseSInt32(@string, 0, -1, NumberStyles.Integer);
-                    }
-                    int num2 = num / 2;
-                    int worldSizeTile = worldBuilder.WorldSize / worldBuilder.WorldTileSize - 1;
-                    for (int l = 0; l < worldBuilder.WorldSize + num; l += num)
-                    {
-                        if (!GenWaterBorderE || !GenWaterBorderW || !GenWaterBorderN || !GenWaterBorderS)
-                        {
-                            for (int m = 0; m < 4; m++)
-                            {
-                                TranslationData translationData = null;
-                                if (m == 0 && !GenWaterBorderS)
-                                {
-                                    translationData = new TranslationData(l + Rand.Instance.Range(0, num2, false), Rand.Instance.Range(0, num2, false), true, vector.x, vector.y, true, 0);
-                                }
-                                else if (m == 1 && !GenWaterBorderN)
-                                {
-                                    translationData = new TranslationData(l + Rand.Instance.Range(0, num2, false), worldBuilder.WorldSize - Rand.Instance.Range(0, num2, false), true, vector.x, vector.y, true, 0);
-                                }
-                                else if (m == 2 && !GenWaterBorderW)
-                                {
-                                    translationData = new TranslationData(Rand.Instance.Range(0, num2, false), l + Rand.Instance.Range(0, num2, false), true, vector.x, vector.y, true, 0);
-                                }
-                                else if (m == 3 && !GenWaterBorderE)
-                                {
-                                    translationData = new TranslationData(worldBuilder.WorldSize - Rand.Instance.Range(0, num2, false), l + Rand.Instance.Range(0, num2, false), true, vector.x, vector.y, true, 0);
-                                }
-                                if (translationData != null && (StampManager.TryGetStamp(worldBuilder.biomeMap.data[Mathf.Clamp(translationData.x / worldBuilder.WorldTileSize, 0, worldSizeTile), Mathf.Clamp(translationData.y / worldBuilder.WorldTileSize, 0, worldSizeTile)].ToString() + "_land_border", out RawStamp stamp2) || StampManager.TryGetStamp("land_border", out stamp2)))
-                                {
-                                    StampManager.DrawStamp(terrainDest, new Stamp(stamp2, translationData, false, default, 0.1f, false, ""), true);
-                                }
-                            }
-                        }
-                        if (GenWaterBorderE || GenWaterBorderW || GenWaterBorderN || GenWaterBorderS)
-                        {
-                            for (int n = 0; n < 4; n++)
-                            {
-                                TranslationData translationData2 = null;
-                                if (n == 0 && GenWaterBorderS)
-                                {
-                                    translationData2 = new TranslationData(l, Rand.Instance.Range(0, num2 / 2, false), true, vector.x, vector.y, true, 0);
-                                }
-                                else if (n == 1 && GenWaterBorderN)
-                                {
-                                    translationData2 = new TranslationData(l, worldBuilder.WorldSize - Rand.Instance.Range(0, num2 / 2, false), true, vector.x, vector.y, true, 0);
-                                }
-                                else if (n == 2 && GenWaterBorderW)
-                                {
-                                    translationData2 = new TranslationData(Rand.Instance.Range(0, num2 / 2, false), l, true, vector.x, vector.y, true, 0);
-                                }
-                                else if (n == 3 && GenWaterBorderE)
-                                {
-                                    translationData2 = new TranslationData(worldBuilder.WorldSize - Rand.Instance.Range(0, num2 / 2, false), l, true, vector.x, vector.y, true, 0);
-                                }
-                                if (translationData2 != null && (StampManager.TryGetStamp(worldBuilder.biomeMap.data[Mathf.Clamp(translationData2.x / worldBuilder.WorldTileSize, 0, worldSizeTile), Mathf.Clamp(translationData2.y / worldBuilder.WorldTileSize, 0, worldSizeTile)].ToString() + "_water_border", out RawStamp stamp2) || StampManager.TryGetStamp("water_border", out stamp2)))
-                                {
-                                    StampManager.DrawStamp(terrainDest, new Stamp(stamp2, translationData2, false, default, 0.1f, false, ""), true);
-                                    Stamp stamp3 = new Stamp(stamp2, translationData2, true, new Color32(0, 0, (byte)worldBuilder.WaterHeight, 0), 0.1f, true, "");
-                                    waterLayer.Stamps.Add(stamp3);
-                                    StampManager.DrawWaterStamp(waterDest, stamp3, true);
-                                }
-                            }
-                        }
-                        Vector2 vector2 = Vector2.one * (num / 1024f);
-                        for (int num3 = 0; num3 < 4; num3++)
-                        {
-                            DrawStamp(l, worldBuilder.WorldSize, vector2, num3, "ground", new Color(1f, 0f, 0f, 0f));
-                        }
-                    }
-                });
-                Task biomeTask = Task.Run(delegate ()
-                {
-                    if (fillerBiome != null)
-                    {
-                        GameRandom gameRandom = GameRandomManager.Instance.CreateGameRandom(worldBuilder.Seed + 20);
-                        for (int l = 0; l < worldTileCountWide; l++)
-                        {
-                            for (int m = 0; m < worldTileCountWide; m++)
-                            {
-                                BiomeType biomeType = worldBuilder.biomeMap.data[l, m];
-                                if (biomeType == BiomeType.none)
-                                {
-                                    biomeType = GetBiomeViaNeighbors(l, m, biomeType);
-                                }
-                                if (biomeType != BiomeType.none)
-                                {
-                                    StampManager.DrawStamp(biomeDest, fillerBiome.terrainPixels, 256 + l * worldBuilder.WorldTileSize + worldBuilder.WorldTileSize / 2, 256 + m * worldBuilder.WorldTileSize + worldBuilder.WorldTileSize / 2, worldBuilder.WorldSize, worldBuilder.WorldSize, fillerBiome.width, fillerBiome.height, 1f, worldBuilder.WorldTileSize / 1024f * 4f, true, true, biomeColors[biomeType], 0.1f, gameRandom.RandomRange(0, 4) * 90, false, false);
-                                }
-                            }
-                        }
-                        GameRandomManager.Instance.FreeGameRandom(gameRandom);
-                    }
-                });
+                Task terrainBorderTask = StartTerrainBorderTask();
+                Task biomeTask = StartBiomeTask();
 
                 while (true)
                 {
@@ -421,6 +312,123 @@ namespace MyTestMod.Harmony.WorldBuilder
                     }
                 }
                 return currentBiome;
+            }
+
+            private static Task StartBiomeTask()
+            {
+                RawStamp fillerBiome = StampManager.GetStamp("filler_biome");
+                int worldTileCountWide = worldBuilder.WorldSize / worldBuilder.WorldTileSize;
+
+                if (fillerBiome == null)
+                {
+                    return Task.CompletedTask;
+                }
+
+                return Task.Run(delegate ()
+                {
+                    GameRandom gameRandom = GameRandomManager.Instance.CreateGameRandom(worldBuilder.Seed + 20);
+                    for (int l = 0; l < worldTileCountWide; l++)
+                    {
+                        for (int m = 0; m < worldTileCountWide; m++)
+                        {
+                            BiomeType biomeType = worldBuilder.biomeMap.data[l, m];
+                            if (biomeType == BiomeType.none)
+                            {
+                                biomeType = GetBiomeViaNeighbors(l, m, biomeType);
+                            }
+                            else
+                            {
+                                StampManager.DrawStamp(biomeDest, fillerBiome.terrainPixels, 256 + l * worldBuilder.WorldTileSize + worldBuilder.WorldTileSize / 2, 256 + m * worldBuilder.WorldTileSize + worldBuilder.WorldTileSize / 2, worldBuilder.WorldSize, worldBuilder.WorldSize, fillerBiome.width, fillerBiome.height, 1f, worldBuilder.WorldTileSize / 1024f * 4f, true, true, biomeColors[biomeType], 0.1f, gameRandom.RandomRange(0, 4) * 90, false, false);
+                            }
+                        }
+                    }
+                    GameRandomManager.Instance.FreeGameRandom(gameRandom);
+                });
+            }
+
+            private static Task StartTerrainBorderTask()
+            {
+                return Task.Run(delegate ()
+                {
+                    Vector2 vector = new Vector2(1.5f, 3.5f);
+                    string @string = thisWorldProperties.GetString("border.scale");
+                    if (@string != string.Empty)
+                    {
+                        vector = StringParsers.ParseVector2(@string);
+                    }
+                    int num = 512;
+                    if ((@string = thisWorldProperties.GetString("border_step_distance")) != string.Empty)
+                    {
+                        num = StringParsers.ParseSInt32(@string, 0, -1, NumberStyles.Integer);
+                    }
+                    int num2 = num / 2;
+                    int worldSizeTile = worldBuilder.WorldSize / worldBuilder.WorldTileSize - 1;
+                    for (int l = 0; l < worldBuilder.WorldSize + num; l += num)
+                    {
+                        if (!GenWaterBorderE || !GenWaterBorderW || !GenWaterBorderN || !GenWaterBorderS)
+                        {
+                            for (int m = 0; m < 4; m++)
+                            {
+                                TranslationData translationData = null;
+                                if (m == 0 && !GenWaterBorderS)
+                                {
+                                    translationData = new TranslationData(l + Rand.Instance.Range(0, num2, false), Rand.Instance.Range(0, num2, false), true, vector.x, vector.y, true, 0);
+                                }
+                                else if (m == 1 && !GenWaterBorderN)
+                                {
+                                    translationData = new TranslationData(l + Rand.Instance.Range(0, num2, false), worldBuilder.WorldSize - Rand.Instance.Range(0, num2, false), true, vector.x, vector.y, true, 0);
+                                }
+                                else if (m == 2 && !GenWaterBorderW)
+                                {
+                                    translationData = new TranslationData(Rand.Instance.Range(0, num2, false), l + Rand.Instance.Range(0, num2, false), true, vector.x, vector.y, true, 0);
+                                }
+                                else if (m == 3 && !GenWaterBorderE)
+                                {
+                                    translationData = new TranslationData(worldBuilder.WorldSize - Rand.Instance.Range(0, num2, false), l + Rand.Instance.Range(0, num2, false), true, vector.x, vector.y, true, 0);
+                                }
+                                if (translationData != null && (StampManager.TryGetStamp(worldBuilder.biomeMap.data[Mathf.Clamp(translationData.x / worldBuilder.WorldTileSize, 0, worldSizeTile), Mathf.Clamp(translationData.y / worldBuilder.WorldTileSize, 0, worldSizeTile)].ToString() + "_land_border", out RawStamp stamp2) || StampManager.TryGetStamp("land_border", out stamp2)))
+                                {
+                                    StampManager.DrawStamp(terrainDest, new Stamp(stamp2, translationData, false, default, 0.1f, false, ""), true);
+                                }
+                            }
+                        }
+                        if (GenWaterBorderE || GenWaterBorderW || GenWaterBorderN || GenWaterBorderS)
+                        {
+                            for (int n = 0; n < 4; n++)
+                            {
+                                TranslationData translationData2 = null;
+                                if (n == 0 && GenWaterBorderS)
+                                {
+                                    translationData2 = new TranslationData(l, Rand.Instance.Range(0, num2 / 2, false), true, vector.x, vector.y, true, 0);
+                                }
+                                else if (n == 1 && GenWaterBorderN)
+                                {
+                                    translationData2 = new TranslationData(l, worldBuilder.WorldSize - Rand.Instance.Range(0, num2 / 2, false), true, vector.x, vector.y, true, 0);
+                                }
+                                else if (n == 2 && GenWaterBorderW)
+                                {
+                                    translationData2 = new TranslationData(Rand.Instance.Range(0, num2 / 2, false), l, true, vector.x, vector.y, true, 0);
+                                }
+                                else if (n == 3 && GenWaterBorderE)
+                                {
+                                    translationData2 = new TranslationData(worldBuilder.WorldSize - Rand.Instance.Range(0, num2 / 2, false), l, true, vector.x, vector.y, true, 0);
+                                }
+                                if (translationData2 != null && (StampManager.TryGetStamp(worldBuilder.biomeMap.data[Mathf.Clamp(translationData2.x / worldBuilder.WorldTileSize, 0, worldSizeTile), Mathf.Clamp(translationData2.y / worldBuilder.WorldTileSize, 0, worldSizeTile)].ToString() + "_water_border", out RawStamp stamp2) || StampManager.TryGetStamp("water_border", out stamp2)))
+                                {
+                                    StampManager.DrawStamp(terrainDest, new Stamp(stamp2, translationData2, false, default, 0.1f, false, ""), true);
+                                    Stamp stamp3 = new Stamp(stamp2, translationData2, true, new Color32(0, 0, (byte)worldBuilder.WaterHeight, 0), 0.1f, true, "");
+                                    waterLayer.Stamps.Add(stamp3);
+                                    StampManager.DrawWaterStamp(waterDest, stamp3, true);
+                                }
+                            }
+                        }
+                        Vector2 vector2 = Vector2.one * (num / 1024f);
+                        for (int num3 = 0; num3 < 4; num3++)
+                        {
+                            DrawStamp(l, worldBuilder.WorldSize, vector2, num3, "ground", new Color(1f, 0f, 0f, 0f));
+                        }
+                    }
+                });
             }
         }
     }
