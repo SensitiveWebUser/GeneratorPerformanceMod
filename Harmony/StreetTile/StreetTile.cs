@@ -1,8 +1,10 @@
 ﻿using HarmonyLib;
 using System;
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using UnityEngine;
 using WorldGenerationEngineFinal;
 
@@ -38,11 +40,14 @@ namespace MyTestMod.Harmony.StreetTile
 
             private static bool NewSpawnWildernessPrefabMethod()
             {
-                GameRandom gameRandom = GameRandomManager.Instance.CreateGameRandom(WorldGenerationEngineFinal.WorldBuilder.Instance.Seed + 4096953);
+                const int SeedOffset = 4096953;
+                const int MaxAttempts = 6;
+
+                GameRandom gameRandom = GameRandomManager.Instance.CreateGameRandom(WorldGenerationEngineFinal.WorldBuilder.Instance.Seed + SeedOffset);
                 POITags poiTags = (WorldGenerationEngineFinal.WorldBuilder.Instance.Towns == WorldGenerationEngineFinal.WorldBuilder.GenerationSelections.None) ? POITags.none : traderTag;
                 Vector2i centerPosition = streetTile.WorldPositionCenter;
                 PrefabData wildernessPrefab = PrefabManager.GetWildernessPrefab(poiTags, POITags.none, default(Vector2i), default(Vector2i), false, centerPosition);
-                int attemptCount = -1;
+                int attemptCount = 0;
                 int rotation;
                 int width;
                 int height;
@@ -51,13 +56,8 @@ namespace MyTestMod.Harmony.StreetTile
                 int medianHeight;
                 int worldSize = WorldGenerationEngineFinal.WorldBuilder.Instance.WorldSize; // Cache world size
 
-                do
+                while (attemptCount < MaxAttempts)
                 {
-                    attemptCount++;
-                    if (attemptCount >= 6)
-                    {
-                        break;
-                    }
                     rotation = (wildernessPrefab.RotationsToNorth + gameRandom.RandomRange(0, 12)) % 4;
                     width = (rotation == 1 || rotation == 3) ? wildernessPrefab.size.z : wildernessPrefab.size.x;
                     height = (rotation == 1 || rotation == 3) ? wildernessPrefab.size.x : wildernessPrefab.size.z;
@@ -70,7 +70,7 @@ namespace MyTestMod.Harmony.StreetTile
                         center = new Vector2(position.x + height / 2, position.y + width / 2)
                     };
 
-                    if (extendedRect.max.x < worldSize && extendedRect.min.x >= 0f && extendedRect.max.y < worldSize && extendedRect.min.y >= 0f)
+                    if (IsWithinWorldBounds(extendedRect, worldSize))
                     {
                         BiomeType biome = WorldGenerationEngineFinal.WorldBuilder.Instance.GetBiome((int)boundingRect.center.x, (int)boundingRect.center.y);
                         medianHeight = Mathf.CeilToInt(WorldGenerationEngineFinal.WorldBuilder.Instance.GetHeight((int)boundingRect.center.x, (int)boundingRect.center.y));
@@ -85,10 +85,17 @@ namespace MyTestMod.Harmony.StreetTile
                             }
                         }
                     }
-                } while (attemptCount < 6);
+
+                    attemptCount++;
+                }
 
                 GameRandomManager.Instance.FreeGameRandom(gameRandom);
                 return false;
+            }
+
+            private static bool IsWithinWorldBounds(Rect extendedRect, int worldSize)
+            {
+                return extendedRect.max.x < worldSize && extendedRect.min.x >= 0f && extendedRect.max.y < worldSize && extendedRect.min.y >= 0f;
             }
 
             private static Vector2i CalculatePosition(int width, int height, GameRandom gameRandom)
@@ -117,13 +124,13 @@ namespace MyTestMod.Harmony.StreetTile
 
             private static List<int> GetHeights(Vector2i position, int width, int height, BiomeType biome, int medianHeight, int worldSize)
             {
-                List<int> heights = new List<int>();
+                ConcurrentBag<int> heights = new ConcurrentBag<int>();
                 WorldGenerationEngineFinal.WorldBuilder worldBuilder = WorldGenerationEngineFinal.WorldBuilder.Instance;
 
                 int xEnd = position.x + width;
                 int yEnd = position.y + height;
 
-                for (int i = position.x; i < xEnd; i++)
+                Parallel.For(position.x, xEnd, i =>
                 {
                     for (int j = position.y; j < yEnd; j++)
                     {
@@ -137,9 +144,9 @@ namespace MyTestMod.Harmony.StreetTile
                             }
                         }
                     }
-                }
+                });
 
-                return heights;
+                return heights.ToList();
             }
 
             private static bool IsWithinWorldBounds(int x, int y, int worldSize)
@@ -268,13 +275,17 @@ namespace MyTestMod.Harmony.StreetTile
                 int startY = Mathf.FloorToInt(boundingRect.y / 10f) - 1;
                 int endY = Mathf.CeilToInt(boundingRect.yMax / 10f) + 1;
 
-                for (int i = startX; i < endX; i++)
+                WorldGenerationEngineFinal.WorldBuilder worldBuilder = WorldGenerationEngineFinal.WorldBuilder.Instance;
+                int gridWidth = worldBuilder.PathingGrid.GetLength(0);
+                int gridHeight = worldBuilder.PathingGrid.GetLength(1);
+
+                Parallel.For(startX, endX, i =>
                 {
                     for (int j = startY; j < endY; j++)
                     {
-                        if (i >= 0 && i < WorldGenerationEngineFinal.WorldBuilder.Instance.PathingGrid.GetLength(0) && j >= 0 && j < WorldGenerationEngineFinal.WorldBuilder.Instance.PathingGrid.GetLength(1))
+                        if (IsWithinGridBounds(i, j, gridWidth, gridHeight))
                         {
-                            if (i == startX || i == endX - 1 || j == startY || j == endY - 1)
+                            if (IsOnBoundary(i, j, startX, endX, startY, endY))
                             {
                                 PathingUtils.SetPathBlocked(i, j, 2);
                             }
@@ -284,7 +295,17 @@ namespace MyTestMod.Harmony.StreetTile
                             }
                         }
                     }
-                }
+                });
+            }
+
+            private static bool IsWithinGridBounds(int x, int y, int gridWidth, int gridHeight)
+            {
+                return x >= 0 && x < gridWidth && y >= 0 && y < gridHeight;
+            }
+
+            private static bool IsOnBoundary(int x, int y, int startX, int endX, int startY, int endY)
+            {
+                return x == startX || x == endX - 1 || y == startY || y == endY - 1;
             }
 
             private static void UpdateStreetTileWorld(Rect boundingRect)
