@@ -38,37 +38,17 @@ namespace MyTestMod.Harmony.StampManager
                 double angleInRadians = Math.PI / 180.0 * _angle;
                 double sine = Math.Sin(angleInRadians);
                 double cosine = Math.Cos(angleInRadians);
-                int offset = Mathf.FloorToInt(((int)Mathf.Sqrt(_srcWidth * _srcWidth + _srcHeight * _srcHeight) - _srcWidth) / 2 * _scale);
+
+                int offset = Mathf.FloorToInt((Mathf.Sqrt(_srcWidth * _srcWidth + _srcHeight * _srcHeight) - _srcWidth) / 2 * _scale);
                 int scaledSrcWidth = Mathf.FloorToInt(_srcWidth * _scale + offset);
+
                 offset = -offset;
 
-                int startX = offset;
-                int xPosition = _x + offset;
-                if (xPosition < 0)
-                {
-                    startX -= xPosition;
-                }
+                int startX = Math.Max(offset, -_x);
+                int endX = Math.Min(scaledSrcWidth, _destWidth - _x);
 
-                int endX = scaledSrcWidth;
-                xPosition = _x + scaledSrcWidth;
-                if (xPosition >= _destWidth)
-                {
-                    endX -= xPosition - _destWidth;
-                }
-
-                int startY = offset;
-                int yPosition = _y + offset;
-                if (yPosition < 0)
-                {
-                    startY -= yPosition;
-                }
-
-                int endY = scaledSrcWidth;
-                yPosition = _y + scaledSrcWidth;
-                if (yPosition >= _destHeight)
-                {
-                    endY -= yPosition - _destHeight;
-                }
+                int startY = Math.Max(offset, -_y);
+                int endY = Math.Min(scaledSrcWidth, _destHeight - _y);
 
                 for (int i = startY; i < endY; i++)
                 {
