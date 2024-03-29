@@ -41,187 +41,195 @@ namespace MyTestMod.Harmony.StreetTile
             private static bool NewSpawnWildernessPrefabMethod()
             {
                 GameRandom gameRandom = GameRandomManager.Instance.CreateGameRandom(WorldGenerationEngineFinal.WorldBuilder.Instance.Seed + 4096953);
-                POITags _withoutTags = WorldGenerationEngineFinal.WorldBuilder.Instance.Towns == WorldGenerationEngineFinal.WorldBuilder.GenerationSelections.None ? POITags.none : traderTag;
+                POITags withoutTags = (WorldGenerationEngineFinal.WorldBuilder.Instance.Towns == WorldGenerationEngineFinal.WorldBuilder.GenerationSelections.None) ? POITags.none : traderTag;
                 POITags none = POITags.none;
                 Vector2i worldPositionCenter = streetTile.WorldPositionCenter;
-                Vector2i maxSize = new Vector2i();
-                Vector2i minSize = new Vector2i();
-                Vector2i center = worldPositionCenter;
-                PrefabData wildernessPrefab = PrefabManager.GetWildernessPrefab(_withoutTags, none, maxSize, minSize, center: center);
-                int num1 = -1;
-                label_1:
+                PrefabData wildernessPrefab = PrefabManager.GetWildernessPrefab(withoutTags, none, default(Vector2i), default(Vector2i), false, worldPositionCenter);
+                int num = -1;
                 int num2;
                 int num3;
+                int num4;
                 Vector2i vector2i;
-                Rect rect1;
-                int medianHeight;
-                do
+                Rect rect;
+                int num6;
+                for (; ; )
                 {
-                    Rect rect2;
-                    do
+                    IL_60:
+                    num++;
+                    if (num >= 6)
                     {
-                        ++num1;
-                        if (num1 >= 6)
-                        {
-                            GameRandomManager.Instance.FreeGameRandom(gameRandom);
-                            return false;
-                        }
-                        int num4 = ((int)wildernessPrefab.RotationsToNorth + gameRandom.RandomRange(0, 12)) % 4;
-                        num2 = wildernessPrefab.size.x;
+                        break;
+                    }
+                    num2 = (wildernessPrefab.RotationsToNorth + gameRandom.RandomRange(0, 12)) % 4;
+                    num3 = wildernessPrefab.size.x;
+                    num4 = wildernessPrefab.size.z;
+                    if (num2 == 1 || num2 == 3)
+                    {
                         num3 = wildernessPrefab.size.z;
-                        if (num4 == 1 || num4 == 3)
+                        num4 = wildernessPrefab.size.x;
+                    }
+                    if (num3 > 150 || num4 > 150)
+                    {
+                        vector2i = streetTile.WorldPositionCenter - new Vector2i((num3 - 150) / 2, (num4 - 150) / 2);
+                    }
+                    else
+                    {
+                        try
                         {
-                            num2 = wildernessPrefab.size.z;
-                            num3 = wildernessPrefab.size.x;
+                            vector2i = new Vector2i(gameRandom.RandomRange(streetTile.WorldPosition.x + 10, streetTile.WorldPosition.x + 150 - num3 - 10), gameRandom.RandomRange(streetTile.WorldPosition.y + 10, streetTile.WorldPosition.y + 150 - num4 - 10));
                         }
-                        if (num2 <= 150)
+                        catch
                         {
-                            if (num3 <= 150)
+                            vector2i = streetTile.WorldPositionCenter - new Vector2i(num3 / 2, num4 / 2);
+                        }
+                    }
+                    int num5 = (num3 > num4) ? num3 : num4;
+                    rect = new Rect(vector2i.x, vector2i.y, num5, num5);
+                    new Rect(rect.min - new Vector2(num5, num5) / 2f, rect.size + new Vector2(num5, num5));
+                    Rect rect2 = new Rect(rect.min - new Vector2(num5, num5) / 2f, rect.size + new Vector2(num5, num5))
+                    {
+                        center = new Vector2(vector2i.x + num4 / 2, vector2i.y + num3 / 2)
+                    };
+                    if (rect2.max.x < WorldGenerationEngineFinal.WorldBuilder.Instance.WorldSize && rect2.min.x >= 0f && rect2.max.y < WorldGenerationEngineFinal.WorldBuilder.Instance.WorldSize && rect2.min.y >= 0f)
+                    {
+                        BiomeType biome = WorldGenerationEngineFinal.WorldBuilder.Instance.GetBiome((int)rect.center.x, (int)rect.center.y);
+                        num6 = Mathf.CeilToInt(WorldGenerationEngineFinal.WorldBuilder.Instance.GetHeight((int)rect.center.x, (int)rect.center.y));
+                        List<int> list = new List<int>();
+                        for (int i = vector2i.x; i < vector2i.x + num3; i++)
+                        {
+                            for (int j = vector2i.y; j < vector2i.y + num4; j++)
                             {
-                                try
+                                if (i >= WorldGenerationEngineFinal.WorldBuilder.Instance.WorldSize || i < 0 || j >= WorldGenerationEngineFinal.WorldBuilder.Instance.WorldSize || j < 0 || WorldGenerationEngineFinal.WorldBuilder.Instance.GetWater(i, j) > 0 || biome != WorldGenerationEngineFinal.WorldBuilder.Instance.GetBiome(i, j) || Mathf.Abs(Mathf.CeilToInt(WorldGenerationEngineFinal.WorldBuilder.Instance.GetHeight(i, j)) - num6) > 11)
                                 {
-                                    vector2i = new Vector2i(gameRandom.RandomRange(streetTile.WorldPosition.x + 10, streetTile.WorldPosition.x + 150 - num2 - 10), gameRandom.RandomRange(streetTile.WorldPosition.y + 10, streetTile.WorldPosition.y + 150 - num3 - 10));
-                                    goto label_10;
+                                    goto IL_60;
                                 }
-                                catch
-                                {
-                                    vector2i = streetTile.WorldPositionCenter - new Vector2i(num2 / 2, num3 / 2);
-                                    goto label_10;
-                                }
+                                list.Add((int)WorldGenerationEngineFinal.WorldBuilder.Instance.GetHeight(i, j));
                             }
                         }
-                        vector2i = streetTile.WorldPositionCenter - new Vector2i((num2 - 150) / 2, (num3 - 150) / 2);
-                        label_10:
-                        int num5 = num2 > num3 ? num2 : num3;
-                        rect1 = new Rect((float)vector2i.x, (float)vector2i.y, (float)num5, (float)num5);
-                        Rect rect3 = new Rect(rect1.min - new Vector2((float)num5, (float)num5) / 2f, rect1.size + new Vector2((float)num5, (float)num5));
-                        rect2 = new Rect(rect1.min - new Vector2((float)num5, (float)num5) / 2f, rect1.size + new Vector2((float)num5, (float)num5));
-                        rect2.center = new Vector2((float)(vector2i.x + num3 / 2), (float)(vector2i.y + num2 / 2));
-                    }
-                    while ((double)rect2.max.x >= (double)WorldGenerationEngineFinal.WorldBuilder.Instance.WorldSize || (double)rect2.min.x < 0.0 || (double)rect2.max.y >= (double)WorldGenerationEngineFinal.WorldBuilder.Instance.WorldSize || (double)rect2.min.y < 0.0);
-                    BiomeType biome = WorldGenerationEngineFinal.WorldBuilder.Instance.GetBiome((int)rect1.center.x, (int)rect1.center.y);
-                    int num6 = Mathf.CeilToInt(WorldGenerationEngineFinal.WorldBuilder.Instance.GetHeight((int)rect1.center.x, (int)rect1.center.y));
-                    List<int> heights = new List<int>();
-                    for (int x = vector2i.x; x < vector2i.x + num2; ++x)
-                    {
-                        for (int y = vector2i.y; y < vector2i.y + num3; ++y)
+                        num6 = GetMedianHeight(list);
+                        if (num6 + wildernessPrefab.yOffset >= 2)
                         {
-                            if (x < WorldGenerationEngineFinal.WorldBuilder.Instance.WorldSize && x >= 0 && y < WorldGenerationEngineFinal.WorldBuilder.Instance.WorldSize && y >= 0 && WorldGenerationEngineFinal.WorldBuilder.Instance.GetWater(x, y) <= (byte)0 && biome == WorldGenerationEngineFinal.WorldBuilder.Instance.GetBiome(x, y) && Mathf.Abs(Mathf.CeilToInt(WorldGenerationEngineFinal.WorldBuilder.Instance.GetHeight(x, y)) - num6) <= 11)
-                                heights.Add((int)WorldGenerationEngineFinal.WorldBuilder.Instance.GetHeight(x, y));
-                            else
-                                goto label_1;
+                            goto Block_20;
                         }
                     }
-                    medianHeight = GetMedianHeight(heights);
                 }
-                while (medianHeight + wildernessPrefab.yOffset < 2);
-                Vector3i vector3i1 = new Vector3i(SubHalfWorld(vector2i.x), GetHeightCeil(rect1.center) + wildernessPrefab.yOffset + 1, SubHalfWorld(vector2i.y));
-                Vector3i vector3i2 = new Vector3i(SubHalfWorld(vector2i.x), GetHeightCeil(rect1.center), SubHalfWorld(vector2i.y));
-                int _id = PrefabManager.PrefabInstanceId++;
+                GameRandomManager.Instance.FreeGameRandom(gameRandom);
+                return false;
+                Block_20:
+                Vector3i vector3i = new Vector3i(SubHalfWorld(vector2i.x), GetHeightCeil(rect.center) + wildernessPrefab.yOffset + 1, SubHalfWorld(vector2i.y));
+                Vector3i vector3i2 = new Vector3i(SubHalfWorld(vector2i.x), GetHeightCeil(rect.center), SubHalfWorld(vector2i.y));
+                int num7 = PrefabManager.PrefabInstanceId++;
                 gameRandom.SetSeed(vector2i.x + vector2i.x * vector2i.y + vector2i.y);
-                int num7 = gameRandom.RandomRange(0, 4) + (int)wildernessPrefab.RotationsToNorth & 3;
-                Vector2 vector2_1 = new Vector2((float)(vector2i.x + num2 / 2), (float)(vector2i.y + num3 / 2));
-                switch (num7)
+                num2 = gameRandom.RandomRange(0, 4);
+                num2 = (num2 + wildernessPrefab.RotationsToNorth & 3);
+                Vector2 vector = new Vector2(vector2i.x + num3 / 2, vector2i.y + num4 / 2);
+                if (num2 == 0)
                 {
-                    case 0:
-                        vector2_1 = new Vector2((float)(vector2i.x + num2 / 2), (float)vector2i.y);
-                        break;
-                    case 1:
-                        vector2_1 = new Vector2((float)(vector2i.x + num2), (float)(vector2i.y + num3 / 2));
-                        break;
-                    case 2:
-                        vector2_1 = new Vector2((float)(vector2i.x + num2 / 2), (float)(vector2i.y + num3));
-                        break;
-                    case 3:
-                        vector2_1 = new Vector2((float)vector2i.x, (float)(vector2i.y + num3 / 2));
-                        break;
+                    vector = new Vector2(vector2i.x + num3 / 2, vector2i.y);
                 }
-                float num8 = 0.0f;
+                else if (num2 == 1)
+                {
+                    vector = new Vector2(vector2i.x + num3, vector2i.y + num4 / 2);
+                }
+                else if (num2 == 2)
+                {
+                    vector = new Vector2(vector2i.x + num3 / 2, vector2i.y + num4);
+                }
+                else if (num2 == 3)
+                {
+                    vector = new Vector2(vector2i.x, vector2i.y + num4 / 2);
+                }
+                float num8 = 0f;
                 if (wildernessPrefab.POIMarkers != null)
                 {
-                    List<Prefab.Marker> markerList = wildernessPrefab.RotatePOIMarkers(true, num7);
-                    for (int index = markerList.Count - 1; index >= 0; --index)
+                    List<Prefab.Marker> list2 = wildernessPrefab.RotatePOIMarkers(true, num2);
+                    for (int k = list2.Count - 1; k >= 0; k--)
                     {
-                        if (markerList[index].MarkerType != Prefab.Marker.MarkerTypes.RoadExit)
-                            markerList.RemoveAt(index);
-                    }
-                    int index1 = gameRandom.RandomRange(0, markerList.Count);
-                    if (markerList.Count > 0)
-                    {
-                        Vector3i start = markerList[index1].Start;
-                        int num9 = markerList[index1].Size.x > markerList[index1].Size.z ? markerList[index1].Size.x : markerList[index1].Size.z;
-                        num8 = Mathf.Max(num8, (float)num9 / 2f);
-                        string groupName = markerList[index1].GroupName;
-                        Vector2 vector2_2 = new Vector2((float)start.x + (float)markerList[index1].Size.x / 2f, (float)start.z + (float)markerList[index1].Size.z / 2f);
-                        vector2_1 = new Vector2((float)vector2i.x + vector2_2.x, (float)vector2i.y + vector2_2.y);
-                        Vector2 vector2_3 = vector2_1;
-                        bool flag = false;
-                        if (markerList.Count > 1)
+                        if (list2[k].MarkerType != Prefab.Marker.MarkerTypes.RoadExit)
                         {
-                            List<Prefab.Marker> all = wildernessPrefab.POIMarkers.FindAll((Predicate<Prefab.Marker>)(m => m.MarkerType == Prefab.Marker.MarkerTypes.RoadExit && m.Start != start && m.GroupName == groupName));
-                            if (all.Count > 0)
-                            {
-                                int index2 = gameRandom.RandomRange(0, all.Count);
-                                vector2_3 = new Vector2((float)(vector2i.x + all[index2].Start.x) + (float)all[index2].Size.x / 2f, (float)(vector2i.y + all[index2].Start.z) + (float)all[index2].Size.z / 2f);
-                            }
-                            flag = true;
+                            list2.RemoveAt(k);
                         }
-                        Path path = new Path(true, num8)
+                    }
+                    int index = gameRandom.RandomRange(0, list2.Count);
+                    if (list2.Count > 0)
+                    {
+                        Vector3i start = list2[index].Start;
+                        int num9 = (list2[index].Size.x > list2[index].Size.z) ? list2[index].Size.x : list2[index].Size.z;
+                        num8 = Mathf.Max(num8, num9 / 2f);
+                        string groupName = list2[index].GroupName;
+                        Vector2 vector2 = new Vector2(start.x + list2[index].Size.x / 2f, start.z + list2[index].Size.z / 2f);
+                        vector = new Vector2(vector2i.x + vector2.x, vector2i.y + vector2.y);
+                        Vector2 vector3 = vector;
+                        bool isPrefabPath = false;
+                        if (list2.Count > 1)
                         {
-                            FinalPathPoints = {
-              new Vector2(vector2_1.x, vector2_1.y)
-            },
-                            pathPoints3d = {
-              new Vector3(vector2_1.x, (float) vector3i2.y, vector2_1.y)
-            }
-                        };
-                        path.FinalPathPoints.Add(new Vector2(vector2_3.x, vector2_3.y));
-                        path.pathPoints3d.Add(new Vector3(vector2_3.x, (float)vector3i2.y, vector2_3.y));
-                        path.IsPrefabPath = flag;
-                        path.StartPointID = _id;
-                        path.EndPointID = _id;
+                            list2 = wildernessPrefab.POIMarkers.FindAll((Prefab.Marker m) => m.MarkerType == Prefab.Marker.MarkerTypes.RoadExit && m.Start != start && m.GroupName == groupName);
+                            if (list2.Count > 0)
+                            {
+                                index = gameRandom.RandomRange(0, list2.Count);
+                                vector3 = new Vector2(vector2i.x + list2[index].Start.x + list2[index].Size.x / 2f, vector2i.y + list2[index].Start.z + list2[index].Size.z / 2f);
+                            }
+                            isPrefabPath = true;
+                        }
+                        Path path = new Path(true, num8, false, false);
+                        path.FinalPathPoints.Add(new Vector2(vector.x, vector.y));
+                        path.pathPoints3d.Add(new Vector3(vector.x, vector3i2.y, vector.y));
+                        path.FinalPathPoints.Add(new Vector2(vector3.x, vector3.y));
+                        path.pathPoints3d.Add(new Vector3(vector3.x, vector3i2.y, vector3.y));
+                        path.IsPrefabPath = isPrefabPath;
+                        path.StartPointID = num7;
+                        path.EndPointID = num7;
                         WorldGenerationEngineFinal.WorldBuilder.Instance.wildernessPaths.Add(path);
                     }
                 }
-                SpawnMarkerPartsAndPrefabsWilderness(wildernessPrefab, new Vector3i(vector2i.x, Mathf.CeilToInt((float)(medianHeight + wildernessPrefab.yOffset + 1)), vector2i.y), (int)(byte)num7);
-                AddPrefab(new PrefabDataInstance(_id, new Vector3i(vector3i1.x, medianHeight + wildernessPrefab.yOffset + 1, vector3i1.z), (byte)num7, wildernessPrefab));
-                ++WorldGenerationEngineFinal.WorldBuilder.Instance.WildernessPrefabCount;
-                if ((medianHeight != GetHeightCeil(rect1.min.x, rect1.min.y) || medianHeight != GetHeightCeil(rect1.max.x, rect1.min.y) || medianHeight != GetHeightCeil(rect1.min.x, rect1.max.y) ? 1 : (medianHeight != GetHeightCeil(rect1.max.x, rect1.max.y) ? 1 : 0)) != 0)
+                SpawnMarkerPartsAndPrefabsWilderness(wildernessPrefab, new Vector3i(vector2i.x, Mathf.CeilToInt(num6 + wildernessPrefab.yOffset + 1), vector2i.y), (byte)num2);
+                PrefabDataInstance pdi = new PrefabDataInstance(num7, new Vector3i(vector3i.x, num6 + wildernessPrefab.yOffset + 1, vector3i.z), (byte)num2, wildernessPrefab);
+                AddPrefab(pdi);
+                WorldGenerationEngineFinal.WorldBuilder.Instance.WildernessPrefabCount++;
+                if (num6 != GetHeightCeil(rect.min.x, rect.min.y) || num6 != GetHeightCeil(rect.max.x, rect.min.y) || num6 != GetHeightCeil(rect.min.x, rect.max.y) || num6 != GetHeightCeil(rect.max.x, rect.max.y))
                 {
-                    WildernessPOICenter = new Vector2i(rect1.center);
-                    WildernessPOISize = Mathf.RoundToInt(Mathf.Max(rect1.size.x, rect1.size.y));
-                    WildernessPOIHeight = medianHeight;
+                    WildernessPOICenter = new Vector2i(rect.center);
+                    WildernessPOISize = Mathf.RoundToInt(Mathf.Max(rect.size.x, rect.size.y));
+                    WildernessPOIHeight = num6;
                 }
-                if ((double)num8 != 0.0)
-                    WildernessPlanner.WildernessPathInfos.Add(new WorldGenerationEngineFinal.WorldBuilder.WildernessPathInfo(new Vector2i(vector2_1), _id, num8, WorldGenerationEngineFinal.WorldBuilder.Instance.GetBiome((int)vector2_1.x, (int)vector2_1.y)));
-                int num10 = Mathf.FloorToInt(rect1.x / 10f) - 1;
-                int num11 = Mathf.CeilToInt(rect1.xMax / 10f) + 1;
-                int num12 = Mathf.FloorToInt(rect1.y / 10f) - 1;
-                int num13 = Mathf.CeilToInt(rect1.yMax / 10f) + 1;
-                for (int x = num10; x < num11; ++x)
+                if (num8 != 0f)
                 {
-                    for (int y = num12; y < num13; ++y)
+                    WildernessPlanner.WildernessPathInfos.Add(new WorldGenerationEngineFinal.WorldBuilder.WildernessPathInfo(new Vector2i(vector), num7, num8, WorldGenerationEngineFinal.WorldBuilder.Instance.GetBiome((int)vector.x, (int)vector.y), 0, null));
+                }
+                int num10 = Mathf.FloorToInt(rect.x / 10f) - 1;
+                int num11 = Mathf.CeilToInt(rect.xMax / 10f) + 1;
+                int num12 = Mathf.FloorToInt(rect.y / 10f) - 1;
+                int num13 = Mathf.CeilToInt(rect.yMax / 10f) + 1;
+                for (int l = num10; l < num11; l++)
+                {
+                    for (int m2 = num12; m2 < num13; m2++)
                     {
-                        if (x >= 0 && x < WorldGenerationEngineFinal.WorldBuilder.Instance.PathingGrid.GetLength(0) && y >= 0 && y < WorldGenerationEngineFinal.WorldBuilder.Instance.PathingGrid.GetLength(1))
+                        if (l >= 0 && l < WorldGenerationEngineFinal.WorldBuilder.Instance.PathingGrid.GetLength(0) && m2 >= 0 && m2 < WorldGenerationEngineFinal.WorldBuilder.Instance.PathingGrid.GetLength(1))
                         {
-                            if (x == num10 || x == num11 - 1 || y == num12 || y == num13 - 1)
-                                PathingUtils.SetPathBlocked(x, y, (sbyte)2);
+                            if (l == num10 || l == num11 - 1 || m2 == num12 || m2 == num13 - 1)
+                            {
+                                PathingUtils.SetPathBlocked(l, m2, 2);
+                            }
                             else
-                                PathingUtils.SetPathBlocked(x, y, true);
+                            {
+                                PathingUtils.SetPathBlocked(l, m2, true);
+                            }
                         }
                     }
                 }
-                int num14 = Mathf.FloorToInt(rect1.x) - 1;
-                int num15 = Mathf.CeilToInt(rect1.xMax) + 1;
-                int num16 = Mathf.FloorToInt(rect1.y) - 1;
-                int num17 = Mathf.CeilToInt(rect1.yMax) + 1;
-                for (int x = num14; x < num15; x += 150)
+                num10 = Mathf.FloorToInt(rect.x) - 1;
+                num11 = Mathf.CeilToInt(rect.xMax) + 1;
+                num12 = Mathf.FloorToInt(rect.y) - 1;
+                num13 = Mathf.CeilToInt(rect.yMax) + 1;
+                for (int n = num10; n < num11; n += 150)
                 {
-                    for (int y = num16; y < num17; y += 150)
+                    for (int num14 = num12; num14 < num13; num14 += 150)
                     {
-                        WorldGenerationEngineFinal.StreetTile streetTileWorld = WorldGenerationEngineFinal.WorldBuilder.Instance.GetStreetTileWorld(x, y);
+                        WorldGenerationEngineFinal.StreetTile streetTileWorld = WorldGenerationEngineFinal.WorldBuilder.Instance.GetStreetTileWorld(n, num14);
                         if (streetTileWorld != null)
-                            streetTileWorld.Used = true;
+                        {
+                            streetTile.Used = true;
+                        }
                     }
                 }
                 GameRandomManager.Instance.FreeGameRandom(gameRandom);
@@ -235,8 +243,8 @@ namespace MyTestMod.Harmony.StreetTile
             {
                 GameRandom gameRandom = GameRandomManager.Instance.CreateGameRandom(_parentPosition.ToString().GetHashCode());
                 List<Prefab.Marker> markerList = _parentPrefab.RotatePOIMarkers(true, _parentRotations);
-                List<Prefab.Marker> all1 = markerList.FindAll((Predicate<Prefab.Marker>)(m => m.MarkerType == Prefab.Marker.MarkerTypes.POISpawn));
-                List<Prefab.Marker> all2 = markerList.FindAll((Predicate<Prefab.Marker>)(m => m.MarkerType == Prefab.Marker.MarkerTypes.PartSpawn));
+                List<Prefab.Marker> all1 = markerList.FindAll(m => m.MarkerType == Prefab.Marker.MarkerTypes.POISpawn);
+                List<Prefab.Marker> all2 = markerList.FindAll(m => m.MarkerType == Prefab.Marker.MarkerTypes.PartSpawn);
                 if (all1.Count > 0)
                 {
                     for (int index = 0; index < all1.Count; ++index)
@@ -249,14 +257,14 @@ namespace MyTestMod.Harmony.StreetTile
                         Vector2i vector2i2 = vector2i1 + maxSize;
                         Vector2i vector2i3 = vector2i1 + maxSize / 2;
                         Vector2i minSize = maxSize;
-                        int rotations = (int)marker.Rotations;
+                        int rotations = marker.Rotations;
                         PrefabData wildernessPrefab = PrefabManager.GetWildernessPrefab(traderTag, marker.Tags, maxSize, minSize, center: new Vector2i(_parentPosition.x + vector2i3.x, _parentPosition.z + vector2i3.y));
                         if (wildernessPrefab != null)
                         {
-                            byte num3 = (byte)((_parentRotations + (int)wildernessPrefab.RotationsToNorth + rotations) % 4);
+                            byte num3 = (byte)((_parentRotations + wildernessPrefab.RotationsToNorth + rotations) % 4);
                             int width = wildernessPrefab.size.x;
                             int height = wildernessPrefab.size.z;
-                            if (num3 == (byte)1 || num3 == (byte)3)
+                            if (num3 == 1 || num3 == 3)
                             {
                                 int num4 = width;
                                 width = height;
@@ -279,12 +287,12 @@ namespace MyTestMod.Harmony.StreetTile
                                     num1 = num1 + maxSize.x - width;
                                     break;
                             }
-                            Rect rect = new Rect((float)num1, (float)num2, (float)width, (float)height);
+                            Rect rect = new Rect(num1, num2, width, height);
                             Vector3i _position = new Vector3i(num1 - WorldGenerationEngineFinal.WorldBuilder.Instance.WorldSize / 2, _parentPosition.y + marker.Start.y + wildernessPrefab.yOffset, num2 - WorldGenerationEngineFinal.WorldBuilder.Instance.WorldSize / 2);
                             AddPrefab(new PrefabDataInstance(PrefabManager.PrefabInstanceId++, _position, num3, wildernessPrefab));
                             ++WorldGenerationEngineFinal.WorldBuilder.Instance.WildernessPrefabCount;
-                            wildernessPrefab.RotatePOIMarkers(true, (int)num3);
-                            SpawnMarkerPartsAndPrefabsWilderness(wildernessPrefab, new Vector3i(num1, _parentPosition.y + marker.Start.y + wildernessPrefab.yOffset, num2), (int)num3);
+                            wildernessPrefab.RotatePOIMarkers(true, num3);
+                            SpawnMarkerPartsAndPrefabsWilderness(wildernessPrefab, new Vector3i(num1, _parentPosition.y + marker.Start.y + wildernessPrefab.yOffset, num2), num3);
                         }
                     }
                 }
@@ -299,7 +307,7 @@ namespace MyTestMod.Harmony.StreetTile
                     foreach (string str in stringList)
                     {
                         string groupName = str;
-                        List<Prefab.Marker> all3 = all2.FindAll((Predicate<Prefab.Marker>)(m => m.GroupName == groupName));
+                        List<Prefab.Marker> all3 = all2.FindAll(m => m.GroupName == groupName);
                         float num5 = 1f;
                         if (all3.Count > 1)
                         {
@@ -316,7 +324,7 @@ namespace MyTestMod.Harmony.StreetTile
                                 PrefabData prefabByName = PrefabManager.GetPrefabByName(marker.PartToSpawn);
                                 if (prefabByName == null)
                                 {
-                                    Log.Error("Part to spawn {0} not found!", (object)marker.PartToSpawn);
+                                    Log.Error("Part to spawn {0} not found!", marker.PartToSpawn);
                                 }
                                 else
                                 {
@@ -325,16 +333,16 @@ namespace MyTestMod.Harmony.StreetTile
                                     switch (num7)
                                     {
                                         case 1:
-                                            num7 = (byte)3;
+                                            num7 = 3;
                                             break;
                                         case 3:
-                                            num7 = (byte)1;
+                                            num7 = 1;
                                             break;
                                     }
-                                    byte num8 = (byte)((_parentRotations + (int)prefabByName.RotationsToNorth + (int)num7) % 4);
+                                    byte num8 = (byte)((_parentRotations + prefabByName.RotationsToNorth + num7) % 4);
                                     AddPrefab(new PrefabDataInstance(PrefabManager.PrefabInstanceId++, _position, num8, prefabByName));
                                     ++WorldGenerationEngineFinal.WorldBuilder.Instance.WildernessPrefabCount;
-                                    SpawnMarkerPartsAndPrefabsWilderness(prefabByName, _parentPosition + marker.Start, (int)num8);
+                                    SpawnMarkerPartsAndPrefabsWilderness(prefabByName, _parentPosition + marker.Start, num8);
                                     break;
                                 }
                             }
