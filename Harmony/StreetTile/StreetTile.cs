@@ -93,28 +93,26 @@ namespace MyTestMod.Harmony.StreetTile
 
             private static Vector2i CalculatePosition(int width, int height, GameRandom gameRandom)
             {
-                Vector2i position;
+                const int PositionOffset = 150;
+                const int MinRange = 10;
 
-                if (width > 150 || height > 150)
+                // If the width or height is greater than the position offset, adjust the position to the center of the street tile
+                if (width > PositionOffset || height > PositionOffset)
                 {
-                    position = streetTile.WorldPositionCenter - new Vector2i((width - 150) / 2, (height - 150) / 2);
-                }
-                else
-                {
-                    int xRange = streetTile.WorldPosition.x + 150 - width - 10;
-                    int yRange = streetTile.WorldPosition.y + 150 - height - 10;
-
-                    if (xRange > 10 && yRange > 10)
-                    {
-                        position = new Vector2i(gameRandom.RandomRange(streetTile.WorldPosition.x + 10, xRange), gameRandom.RandomRange(streetTile.WorldPosition.y + 10, yRange));
-                    }
-                    else
-                    {
-                        position = streetTile.WorldPositionCenter - new Vector2i(width / 2, height / 2);
-                    }
+                    return streetTile.WorldPositionCenter - new Vector2i((width - PositionOffset) / 2, (height - PositionOffset) / 2);
                 }
 
-                return position;
+                int xRange = streetTile.WorldPosition.x + PositionOffset - width - MinRange;
+                int yRange = streetTile.WorldPosition.y + PositionOffset - height - MinRange;
+
+                // If the x and y ranges are greater than the minimum range, calculate a random position within the range
+                if (xRange > MinRange && yRange > MinRange)
+                {
+                    return new Vector2i(gameRandom.RandomRange(streetTile.WorldPosition.x + MinRange, xRange), gameRandom.RandomRange(streetTile.WorldPosition.y + MinRange, yRange));
+                }
+
+                // Otherwise, adjust the position to the center of the street tile
+                return streetTile.WorldPositionCenter - new Vector2i(width / 2, height / 2);
             }
 
             private static List<int> GetHeights(Vector2i position, int width, int height, BiomeType biome, int medianHeight, int worldSize)
@@ -129,22 +127,34 @@ namespace MyTestMod.Harmony.StreetTile
                 {
                     for (int j = position.y; j < yEnd; j++)
                     {
-                        if (i >= 0 && i < worldSize && j >= 0 && j < worldSize)
+                        if (IsWithinWorldBounds(i, j, worldSize) && IsSuitableForHeightCalculation(i, j, biome, worldBuilder))
                         {
-                            if (worldBuilder.GetWater(i, j) <= 0 && biome == worldBuilder.GetBiome(i, j))
-                            {
-                                int heightAtPoint = Mathf.CeilToInt(worldBuilder.GetHeight(i, j));
+                            int heightAtPoint = Mathf.CeilToInt(worldBuilder.GetHeight(i, j));
 
-                                if (Mathf.Abs(heightAtPoint - medianHeight) <= 11)
-                                {
-                                    heights.Add(heightAtPoint);
-                                }
+                            if (IsWithinHeightRange(heightAtPoint, medianHeight))
+                            {
+                                heights.Add(heightAtPoint);
                             }
                         }
                     }
                 }
 
                 return heights;
+            }
+
+            private static bool IsWithinWorldBounds(int x, int y, int worldSize)
+            {
+                return x >= 0 && x < worldSize && y >= 0 && y < worldSize;
+            }
+
+            private static bool IsSuitableForHeightCalculation(int x, int y, BiomeType biome, WorldGenerationEngineFinal.WorldBuilder worldBuilder)
+            {
+                return worldBuilder.GetWater(x, y) <= 0 && biome == worldBuilder.GetBiome(x, y);
+            }
+
+            private static bool IsWithinHeightRange(int heightAtPoint, int medianHeight)
+            {
+                return Mathf.Abs(heightAtPoint - medianHeight) <= 11;
             }
 
             private static bool PlacePrefab(ref int rotation, ref int width, ref int height, ref Vector2i position, ref Rect boundingRect, ref int medianHeight, ref PrefabData wildernessPrefab, ref GameRandom gameRandom)
