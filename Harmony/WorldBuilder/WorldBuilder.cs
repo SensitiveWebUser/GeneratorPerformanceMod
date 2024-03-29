@@ -332,18 +332,18 @@ namespace MyTestMod.Harmony.WorldBuilder
                     int worldSize = worldBuilder.WorldSize;
                     float scale = worldTileSize / 1024f * 4f;
 
-                    for (int l = 0; l < worldTileCountWide; l++)
+                    for (int col = 0; col < worldTileCountWide; col++)
                     {
-                        int xOffset = 256 + l * worldTileSize + worldTileSizeHalf;
+                        int xOffset = 256 + col * worldTileSize + worldTileSizeHalf;
 
-                        for (int m = 0; m < worldTileCountWide; m++)
+                        for (int row = 0; row < worldTileCountWide; row++)
                         {
-                            int yOffset = 256 + m * worldTileSize + worldTileSizeHalf;
-                            BiomeType biomeType = worldBuilder.biomeMap.data[l, m];
+                            int yOffset = 256 + row * worldTileSize + worldTileSizeHalf;
+                            BiomeType biomeType = worldBuilder.biomeMap.data[col, row];
 
                             if (biomeType == BiomeType.none)
                             {
-                                biomeType = GetBiomeViaNeighbors(l, m, biomeType);
+                                biomeType = GetBiomeViaNeighbors(col, row, biomeType);
                             }
                             else
                             {
