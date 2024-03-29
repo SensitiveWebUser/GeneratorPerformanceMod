@@ -1,11 +1,7 @@
 ﻿using HarmonyLib;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
-using WorldGenerationEngineFinal;
 
 namespace MyTestMod.Harmony.StampManager
 {
@@ -50,46 +46,32 @@ namespace MyTestMod.Harmony.StampManager
                 int startY = Math.Max(offset, -_y);
                 int endY = Math.Min(scaledSrcWidth, _destHeight - _y);
 
-                for (int i = startY; i < endY; i++)
+                Parallel.For(startY, endY, i =>
                 {
                     int destIndex = (_y + i) * _destWidth;
                     float y = i / _scale;
-                    for (int j = startX; j < endX; j++)
+                    Parallel.For(startX, endX, j =>
                     {
                         int index = _x + j + destIndex;
                         if (isWater && _dest[index].b > 0f)
                         {
-                            continue;
+                            return;
                         }
 
                         Color rotatedColor = GetRotatedColor(j / _scale, y, _src, sine, cosine, _srcWidth, _srcHeight, isWater);
-                        if (rotatedColor.r + rotatedColor.g + rotatedColor.b + rotatedColor.a < 1E-05f)
+                        if (rotatedColor.r + rotatedColor.g + rotatedColor.b + rotatedColor.a < 0.00001)
                         {
-                            continue;
+                            return;
                         }
 
-                        if (isWater)
+                        if (isWater || (_colorOverride && rotatedColor.a > _biomeCutoff))
                         {
-                            if (_colorOverride)
-                            {
-                                _dest[index] = _color;
-                            }
-                            else
-                            {
-                                _dest[index] = rotatedColor;
-                            }
-
-                            continue;
+                            _dest[index] = _colorOverride ? _color : rotatedColor;
+                            return;
                         }
-
-                        if (_colorOverride)
+                        else if (_colorOverride)
                         {
-                            if (rotatedColor.a > _biomeCutoff)
-                            {
-                                _dest[index] = _color;
-                            }
-
-                            continue;
+                            return;
                         }
 
                         float alphaFactor = rotatedColor.a * _alpha;
@@ -98,8 +80,8 @@ namespace MyTestMod.Harmony.StampManager
                         color.g += (rotatedColor.g - color.g) * alphaFactor;
                         color.b += (rotatedColor.b - color.b) * alphaFactor;
                         _dest[index] = color;
-                    }
-                }
+                    });
+                });
             }
             private static Color GetRotatedColor(float x1, float y1, Color[] src, double sine, double cosine, int width, int height, bool isWater = false)
             {
