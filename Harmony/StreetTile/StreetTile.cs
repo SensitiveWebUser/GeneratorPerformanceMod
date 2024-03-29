@@ -2,6 +2,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using WorldGenerationEngineFinal;
 
@@ -296,118 +297,99 @@ namespace MyTestMod.Harmony.StreetTile
                 }
             }
 
-            private static void SpawnMarkerPartsAndPrefabsWilderness(
-              PrefabData _parentPrefab,
-              Vector3i _parentPosition,
-              int _parentRotations)
+            private static void SpawnMarkerPartsAndPrefabsWilderness(PrefabData _parentPrefab, Vector3i _parentPosition, int _parentRotations)
             {
                 GameRandom gameRandom = GameRandomManager.Instance.CreateGameRandom(_parentPosition.ToString().GetHashCode());
                 List<Prefab.Marker> markerList = _parentPrefab.RotatePOIMarkers(true, _parentRotations);
-                List<Prefab.Marker> all1 = markerList.FindAll(m => m.MarkerType == Prefab.Marker.MarkerTypes.POISpawn);
-                List<Prefab.Marker> all2 = markerList.FindAll(m => m.MarkerType == Prefab.Marker.MarkerTypes.PartSpawn);
-                if (all1.Count > 0)
-                {
-                    for (int index = 0; index < all1.Count; ++index)
-                    {
-                        Prefab.Marker marker = all1[index];
-                        int num1 = _parentPosition.x + marker.Start.x;
-                        int num2 = _parentPosition.z + marker.Start.z;
-                        Vector2i maxSize = new Vector2i(marker.Size.x, marker.Size.z);
-                        Vector2i vector2i1 = new Vector2i(marker.Start.x, marker.Start.z);
-                        Vector2i vector2i2 = vector2i1 + maxSize;
-                        Vector2i vector2i3 = vector2i1 + maxSize / 2;
-                        Vector2i minSize = maxSize;
-                        int rotations = marker.Rotations;
-                        PrefabData wildernessPrefab = PrefabManager.GetWildernessPrefab(traderTag, marker.Tags, maxSize, minSize, center: new Vector2i(_parentPosition.x + vector2i3.x, _parentPosition.z + vector2i3.y));
-                        if (wildernessPrefab != null)
-                        {
-                            byte num3 = (byte)((_parentRotations + wildernessPrefab.RotationsToNorth + rotations) % 4);
-                            int width = wildernessPrefab.size.x;
-                            int height = wildernessPrefab.size.z;
-                            if (num3 == 1 || num3 == 3)
-                            {
-                                (height, width) = (width, height);
-                            }
-                            switch (rotations)
-                            {
-                                case 0:
-                                    num1 += maxSize.x / 2 - width / 2;
-                                    num2 = num2 + maxSize.y - height;
-                                    break;
-                                case 1:
-                                    num2 += maxSize.y / 2 - height / 2;
-                                    break;
-                                case 2:
-                                    num1 += maxSize.x / 2 - width / 2;
-                                    break;
-                                case 3:
-                                    num2 += maxSize.y / 2 - height / 2;
-                                    num1 = num1 + maxSize.x - width;
-                                    break;
-                            }
-                            Rect rect = new Rect(num1, num2, width, height);
-                            Vector3i _position = new Vector3i(num1 - WorldGenerationEngineFinal.WorldBuilder.Instance.WorldSize / 2, _parentPosition.y + marker.Start.y + wildernessPrefab.yOffset, num2 - WorldGenerationEngineFinal.WorldBuilder.Instance.WorldSize / 2);
-                            AddPrefab(new PrefabDataInstance(PrefabManager.PrefabInstanceId++, _position, num3, wildernessPrefab));
-                            ++WorldGenerationEngineFinal.WorldBuilder.Instance.WildernessPrefabCount;
-                            wildernessPrefab.RotatePOIMarkers(true, num3);
-                            SpawnMarkerPartsAndPrefabsWilderness(wildernessPrefab, new Vector3i(num1, _parentPosition.y + marker.Start.y + wildernessPrefab.yOffset, num2), num3);
-                        }
-                    }
-                }
-                if (all2.Count > 0)
-                {
-                    List<string> stringList = new List<string>();
-                    for (int index = 0; index < all2.Count; ++index)
-                    {
-                        if (!(all2[index].GroupName.ToLower() == "highwayN") && !(all2[index].GroupName.ToLower() == "highwayS") && !(all2[index].GroupName.ToLower() == "highwayE") && !(all2[index].GroupName.ToLower() == "highwayW") && !stringList.Contains(all2[index].GroupName))
-                            stringList.Add(all2[index].GroupName);
-                    }
-                    foreach (string str in stringList)
-                    {
-                        string groupName = str;
-                        List<Prefab.Marker> all3 = all2.FindAll(m => m.GroupName == groupName);
-                        float num5 = 1f;
-                        if (all3.Count > 1)
-                        {
-                            num5 = 0.0f;
-                            foreach (Prefab.Marker marker in all3)
-                                num5 += marker.PartChanceToSpawn;
-                        }
-                        float num6 = 0.0f;
-                        foreach (Prefab.Marker marker in all3)
-                        {
-                            num6 += marker.PartChanceToSpawn / num5;
-                            if ((double)gameRandom.RandomRange(0.0f, 1f) <= (double)num6 && (marker.Tags.IsEmpty || wildernessTag.Test_AnySet(marker.Tags)))
-                            {
-                                PrefabData prefabByName = PrefabManager.GetPrefabByName(marker.PartToSpawn);
-                                if (prefabByName == null)
-                                {
-                                    Log.Error("Part to spawn {0} not found!", marker.PartToSpawn);
-                                }
-                                else
-                                {
-                                    Vector3i _position = new Vector3i(_parentPosition.x + marker.Start.x - WorldGenerationEngineFinal.WorldBuilder.Instance.WorldSize / 2, _parentPosition.y + marker.Start.y, _parentPosition.z + marker.Start.z - WorldGenerationEngineFinal.WorldBuilder.Instance.WorldSize / 2);
-                                    byte num7 = marker.Rotations;
-                                    switch (num7)
-                                    {
-                                        case 1:
-                                            num7 = 3;
-                                            break;
-                                        case 3:
-                                            num7 = 1;
-                                            break;
-                                    }
-                                    byte num8 = (byte)((_parentRotations + prefabByName.RotationsToNorth + num7) % 4);
-                                    AddPrefab(new PrefabDataInstance(PrefabManager.PrefabInstanceId++, _position, num8, prefabByName));
-                                    ++WorldGenerationEngineFinal.WorldBuilder.Instance.WildernessPrefabCount;
-                                    SpawnMarkerPartsAndPrefabsWilderness(prefabByName, _parentPosition + marker.Start, num8);
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                }
+                List<Prefab.Marker> poiSpawnMarkers = markerList.FindAll(m => m.MarkerType == Prefab.Marker.MarkerTypes.POISpawn);
+                List<Prefab.Marker> partSpawnMarkers = markerList.FindAll(m => m.MarkerType == Prefab.Marker.MarkerTypes.PartSpawn);
+
+                ProcessPOISpawnMarkers(poiSpawnMarkers, _parentPosition, _parentRotations, gameRandom);
+                ProcessPartSpawnMarkers(partSpawnMarkers, _parentPosition, _parentRotations, gameRandom);
+
                 GameRandomManager.Instance.FreeGameRandom(gameRandom);
+            }
+
+            private static void ProcessPOISpawnMarkers(List<Prefab.Marker> poiSpawnMarkers, Vector3i _parentPosition, int _parentRotations, GameRandom gameRandom)
+            {
+                foreach (Prefab.Marker marker in poiSpawnMarkers)
+                {
+                    Vector2i position = CalculatePosition(marker, _parentPosition);
+                    Vector2i maxSize = new Vector2i(marker.Size.x, marker.Size.z);
+                    Vector2i center = new Vector2i(_parentPosition.x + maxSize.x / 2, _parentPosition.z + maxSize.y / 2);
+                    PrefabData wildernessPrefab = PrefabManager.GetWildernessPrefab(traderTag, marker.Tags, maxSize, maxSize, center: center);
+
+                    if (wildernessPrefab != null)
+                    {
+                        byte rotation = CalculateRotation(_parentRotations, wildernessPrefab, marker);
+                        Vector2i size = CalculateSize(wildernessPrefab, rotation);
+                        Rect rect = new Rect(position.x, position.y, size.x, size.y);
+                        Vector3i _position = new Vector3i(position.x - WorldGenerationEngineFinal.WorldBuilder.Instance.WorldSize / 2, _parentPosition.y + marker.Start.y + wildernessPrefab.yOffset, position.y - WorldGenerationEngineFinal.WorldBuilder.Instance.WorldSize / 2);
+                        AddPrefab(new PrefabDataInstance(PrefabManager.PrefabInstanceId++, _position, rotation, wildernessPrefab));
+                        ++WorldGenerationEngineFinal.WorldBuilder.Instance.WildernessPrefabCount;
+                        wildernessPrefab.RotatePOIMarkers(true, rotation);
+                        SpawnMarkerPartsAndPrefabsWilderness(wildernessPrefab, new Vector3i(position.x, _parentPosition.y + marker.Start.y + wildernessPrefab.yOffset, position.y), rotation);
+                    }
+                }
+            }
+
+            private static void ProcessPartSpawnMarkers(List<Prefab.Marker> partSpawnMarkers, Vector3i _parentPosition, int _parentRotations, GameRandom gameRandom)
+            {
+                List<string> groupNames = partSpawnMarkers.Select(m => m.GroupName.ToLower()).Distinct().ToList();
+                groupNames.RemoveAll(name => name == "highwayN" || name == "highwayS" || name == "highwayE" || name == "highwayW");
+
+                foreach (string groupName in groupNames)
+                {
+                    List<Prefab.Marker> groupMarkers = partSpawnMarkers.FindAll(m => m.GroupName == groupName);
+                    float totalChance = groupMarkers.Sum(m => m.PartChanceToSpawn);
+                    float cumulativeChance = 0f;
+
+                    foreach (Prefab.Marker marker in groupMarkers)
+                    {
+                        cumulativeChance += marker.PartChanceToSpawn / totalChance;
+                        if (gameRandom.RandomRange(0.0f, 1f) <= cumulativeChance && (marker.Tags.IsEmpty || wildernessTag.Test_AnySet(marker.Tags)))
+                        {
+                            PrefabData prefabByName = PrefabManager.GetPrefabByName(marker.PartToSpawn);
+                            if (prefabByName == null)
+                            {
+                                Log.Error("Part to spawn {0} not found!", marker.PartToSpawn);
+                            }
+                            else
+                            {
+                                Vector3i _position = new Vector3i(_parentPosition.x + marker.Start.x - WorldGenerationEngineFinal.WorldBuilder.Instance.WorldSize / 2, _parentPosition.y + marker.Start.y, _parentPosition.z + marker.Start.z - WorldGenerationEngineFinal.WorldBuilder.Instance.WorldSize / 2);
+                                byte rotation = CalculateRotation(_parentRotations, prefabByName, marker);
+                                AddPrefab(new PrefabDataInstance(PrefabManager.PrefabInstanceId++, _position, rotation, prefabByName));
+                                ++WorldGenerationEngineFinal.WorldBuilder.Instance.WildernessPrefabCount;
+                                SpawnMarkerPartsAndPrefabsWilderness(prefabByName, _parentPosition + marker.Start, rotation);
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
+            private static Vector2i CalculatePosition(Prefab.Marker marker, Vector3i _parentPosition)
+            {
+                int x = _parentPosition.x + marker.Start.x;
+                int y = _parentPosition.z + marker.Start.z;
+                return new Vector2i(x, y);
+            }
+
+            private static byte CalculateRotation(int _parentRotations, PrefabData prefab, Prefab.Marker marker)
+            {
+                byte rotation = (byte)((_parentRotations + prefab.RotationsToNorth + marker.Rotations) % 4);
+                return rotation;
+            }
+
+            private static Vector2i CalculateSize(PrefabData prefab, byte rotation)
+            {
+                int width = prefab.size.x;
+                int height = prefab.size.z;
+                if (rotation == 1 || rotation == 3)
+                {
+                    (height, width) = (width, height);
+                }
+                return new Vector2i(width, height);
             }
 
             private static void AddPrefab(PrefabDataInstance pdi)
