@@ -330,7 +330,7 @@ namespace MyTestMod.Harmony.WorldBuilder
                                 BiomeType biomeType = worldBuilder.biomeMap.data[l, m];
                                 if (biomeType == BiomeType.none)
                                 {
-                                    biomeType = getBiomeViaNeighbors(l, m, biomeType);
+                                    biomeType = GetBiomeViaNeighbors(l, m, biomeType);
                                 }
                                 if (biomeType != BiomeType.none)
                                 {
@@ -400,29 +400,30 @@ namespace MyTestMod.Harmony.WorldBuilder
                 });
             }
 
-            private static BiomeType getBiomeViaNeighbors(int x1, int y1, BiomeType thisBiome)
+            private static BiomeType GetBiomeViaNeighbors(int currentX, int currentY, BiomeType currentBiome)
             {
-                int num = x1 + y1 * (worldBuilder.WorldSize / worldBuilder.WorldTileSize) + worldBuilder.Seed;
-                int width = worldBuilder.biomeMap.data.GetLength(0);
-                int height = worldBuilder.biomeMap.data.GetLength(1);
+                int seedOffset = currentX + currentY * (worldBuilder.WorldSize / worldBuilder.WorldTileSize) + worldBuilder.Seed;
+                int mapWidth = worldBuilder.biomeMap.data.GetLength(0);
+                int mapHeight = worldBuilder.biomeMap.data.GetLength(1);
+                int initialDirectionIndex = seedOffset % directions8way.Length;
                 for (int i = 0; i < directions8way.Length; i++)
                 {
-                    int num2 = Mathf.Abs(i + Mathf.Abs(num % directions8way.Length)) % directions8way.Length;
-                    Vector2i vector2i = directions8way[num2];
-                    int x2 = x1 + vector2i.x;
-                    int y2 = y1 + vector2i.y;
-                    if (x2 >= 0 && x2 < width && y2 >= 0 && y2 < height)
+                    int directionIndex = Mathf.Abs(i + initialDirectionIndex) % directions8way.Length;
+                    Vector2i directionVector = directions8way[directionIndex];
+                    int neighborX = currentX + directionVector.x;
+                    int neighborY = currentY + directionVector.y;
+                    if (neighborX >= 0 && neighborX < mapWidth && neighborY >= 0 && neighborY < mapHeight)
                     {
-                        BiomeType biomeType = worldBuilder.biomeMap.data[x2, y2];
-                        if (biomeType != BiomeType.none)
+                        BiomeType neighborBiome = worldBuilder.biomeMap.data[neighborX, neighborY];
+                        if (neighborBiome != BiomeType.none)
                         {
-                            thisBiome = biomeType;
-                            worldBuilder.biomeMap.data[x1, y1] = biomeType;
+                            currentBiome = neighborBiome;
+                            worldBuilder.biomeMap.data[currentX, currentY] = neighborBiome;
                             break;
                         }
                     }
                 }
-                return thisBiome;
+                return currentBiome;
             }
         }
     }
