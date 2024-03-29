@@ -1,6 +1,6 @@
 ﻿using WorldGenerationEngineFinal;
 
-namespace MyTestMod.Harmony.HighwayPlanner
+namespace GeneratorPerformanceMod.Harmony.HighwayPlanner
 {
     internal class ExitConnection
     {

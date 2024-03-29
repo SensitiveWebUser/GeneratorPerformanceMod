@@ -5,7 +5,7 @@ using System.Linq;
 using UnityEngine;
 using WorldGenerationEngineFinal;
 
-namespace MyTestMod.Harmony.HighwayPlanner
+namespace GeneratorPerformanceMod.Harmony.HighwayPlanner
 {
     [HarmonyPatch(typeof(WorldGenerationEngineFinal.HighwayPlanner))]
     [HarmonyPatch("Plan")]
@@ -17,10 +17,8 @@ namespace MyTestMod.Harmony.HighwayPlanner
         [HarmonyPrefix]
         private static bool Prefix(int worldSeed, ref IEnumerator __result)
         {
-            Log.Out("[MyTestMod] HighwayPlanner Generating Plan");
-
+            Log.Out("[GeneratorPerformanceMod] Boosting HighwayPlanner Planning");
             __result = NewPlanMethod(worldSeed);
-
             return false;
         }
 

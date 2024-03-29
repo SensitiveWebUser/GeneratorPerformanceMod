@@ -7,8 +7,8 @@
     <ProjectGuid>{44FB7EBA-2A6B-41AF-B19D-F0D0AADE97BD}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>MyTestMod</RootNamespace>
-    <AssemblyName>MyTestMod</AssemblyName>
+    <RootNamespace>GeneratorPerformanceMod</RootNamespace>
+    <AssemblyName>GeneratorPerformanceMod</AssemblyName>
     <TargetFrameworkVersion>v4.8.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
@@ -78,10 +78,7 @@
     <None Include="app.config" />
     <None Include="packages.config" />
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Config\" />
-    <Folder Include="Scripts\" />
-  </ItemGroup>
+  <ItemGroup />
   <ItemGroup>
     <Content Include="ModInfo.xml" />
   </ItemGroup>

@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using UnityEngine;
 using WorldGenerationEngineFinal;
 
-namespace MyTestMod.Harmony.WorldBuilder
+namespace GeneratorPerformanceMod.Harmony.WorldBuilder
 {
     internal class WorldBuilder
     {
@@ -26,7 +26,7 @@ namespace MyTestMod.Harmony.WorldBuilder
             [HarmonyPrefix]
             private static bool Prefix(WorldGenerationEngineFinal.WorldBuilder __instance, ref IEnumerator __result, ref StampGroup ___waterLayer, ref StampGroup ___terrainLayer, ref StampGroup ___biomeLayer, ref Dictionary<BiomeType, Color32> ___biomeColors, ref DynamicProperties ___thisWorldProperties)
             {
-                Debug.Log("[MyTestMod] WorldBuilder.generateMountains Prefix");
+                Log.Out("[GeneratorPerformanceMod] Boosting Mountains Generation");
 
                 worldBuilder = __instance;
                 waterLayer = ___waterLayer;

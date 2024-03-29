@@ -1,8 +1,8 @@
 ﻿using System.Reflection;
 
-namespace Harmony
+namespace GeneratorPerformanceMod.Harmony
 {
-    public class SampleProject : IModApi
+    public class Init : IModApi
     {
         public void InitMod(Mod _modInstance)
         {

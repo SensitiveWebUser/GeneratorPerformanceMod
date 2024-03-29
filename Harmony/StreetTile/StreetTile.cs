@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using UnityEngine;
 using WorldGenerationEngineFinal;
 
-namespace MyTestMod.Harmony.StreetTile
+namespace GeneratorPerformanceMod.Harmony.StreetTile
 {
     internal class StreetTile
     {

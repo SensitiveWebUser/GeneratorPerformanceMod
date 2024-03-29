@@ -1,9 +1,8 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <xml>
-  <Name value="Testing Mod"/>
+  <Name value="GeneratorPerformanceMod"/>
   <Author value="SensitiveWebUser"/>
-  <Description value="Testing Mod"/>
-  <DisplayName value="Testing Mod"/>
-  <Website value=""/>
+  <Description value="Increases the performance of the world generation process. Speeds up the world generation process well not affecting the quality of the world generation."/>
+  <DisplayName value="Generator Performance Mod"/>
   <Version value="1.0.0.0"/>
 </xml>
