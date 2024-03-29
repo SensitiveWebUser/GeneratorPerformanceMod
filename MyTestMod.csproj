@@ -65,7 +65,6 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Harmony\Examples.cs" />
     <Compile Include="Harmony\HighwayPlanner\ExitConnection.cs" />
     <Compile Include="Harmony\HighwayPlanner\HighwayPlanner.cs" />
     <Compile Include="Harmony\HighwayPlanner\TownshipNode.cs" />
