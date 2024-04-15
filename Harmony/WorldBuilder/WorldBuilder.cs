@@ -201,7 +201,7 @@ namespace GeneratorPerformanceMod.Harmony.WorldBuilder
             [HarmonyPrefix]
             private static bool Prefix(WorldGenerationEngineFinal.WorldBuilder __instance, ref IEnumerator __result, MicroStopwatch ms, ref StampGroup ___waterLayer, ref Dictionary<BiomeType, Color32> ___biomeColors, ref DynamicProperties ___thisWorldProperties, ref Color32[] ___biomeDest, ref Color32[] ___radDest, ref Color[] ___terrainDest, ref float[] ___waterDest, ref bool ___GenWaterBorderN, ref bool ___GenWaterBorderE, ref bool ___GenWaterBorderS, ref bool ___GenWaterBorderW)
             {
-                Debug.Log("[MyTestMod] WorldBuilder.generateBaseStamps Prefix");
+                Debug.Log("[GeneratorPerformanceMod] Boosting Base Stamps Generation");
 
                 worldBuilder = __instance;
                 waterLayer = ___waterLayer;

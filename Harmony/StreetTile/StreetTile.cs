@@ -45,30 +45,39 @@ namespace GeneratorPerformanceMod.Harmony.StreetTile
                 GameRandom gameRandom = GameRandomManager.Instance.CreateGameRandom(WorldGenerationEngineFinal.WorldBuilder.Instance.Seed + SeedOffset);
                 POITags poiTags = (WorldGenerationEngineFinal.WorldBuilder.Instance.Towns == WorldGenerationEngineFinal.WorldBuilder.GenerationSelections.None) ? POITags.none : traderTag;
                 Vector2i centerPosition = streetTile.WorldPositionCenter;
-                PrefabData wildernessPrefab = PrefabManager.GetWildernessPrefab(poiTags, POITags.none, default(Vector2i), default(Vector2i), false, centerPosition);
+                PrefabData wildernessPrefab = PrefabManager.GetWildernessPrefab(poiTags, POITags.none, default, default, false, centerPosition);
                 int attemptCount = 0;
-                int rotation;
-                int width;
-                int height;
-                Vector2i position;
-                Rect boundingRect;
-                int medianHeight;
+                int rotation = 0;
+                int width = 0;
+                int height = 0;
+                Vector2i position = new Vector2i();
+                Rect boundingRect = new Rect();
+                int medianHeight = 0;
                 int worldSize = WorldGenerationEngineFinal.WorldBuilder.Instance.WorldSize; // Cache world size
 
                 while (attemptCount < MaxAttempts)
                 {
+                    Log.Out("Attempt " + attemptCount);
+                    Log.Out("prefab" + wildernessPrefab.Name);
                     rotation = (wildernessPrefab.RotationsToNorth + gameRandom.RandomRange(0, 12)) % 4;
                     width = (rotation == 1 || rotation == 3) ? wildernessPrefab.size.z : wildernessPrefab.size.x;
                     height = (rotation == 1 || rotation == 3) ? wildernessPrefab.size.x : wildernessPrefab.size.z;
 
+                    Log.Out("rotation " + rotation);
+                    Log.Out("width " + width);
+                    Log.Out("height " + height);
+
                     position = CalculatePosition(width, height, gameRandom);
+                    Log.Out("position " + position.ToString());
                     int maxDimension = Math.Max(width, height);
+                    Log.Out( "maxDimension " + maxDimension);
                     boundingRect = new Rect(position.x, position.y, maxDimension, maxDimension);
                     Rect extendedRect = new Rect(boundingRect.min - new Vector2(maxDimension, maxDimension) / 2f, boundingRect.size + new Vector2(maxDimension, maxDimension))
                     {
                         center = new Vector2(position.x + height / 2, position.y + width / 2)
                     };
 
+                    Log.Out(position.ToString() + " " + width + " " + height + " " + boundingRect.ToString() + " " + extendedRect.ToString());
                     if (IsWithinWorldBounds(extendedRect, worldSize))
                     {
                         BiomeType biome = WorldGenerationEngineFinal.WorldBuilder.Instance.GetBiome((int)boundingRect.center.x, (int)boundingRect.center.y);
@@ -80,10 +89,10 @@ namespace GeneratorPerformanceMod.Harmony.StreetTile
                             medianHeight = GetMedianHeight(heights);
                             if (medianHeight + wildernessPrefab.yOffset >= 2)
                             {
-                                return PlacePrefab(ref rotation, ref width, ref height, ref position, ref boundingRect, ref medianHeight, ref wildernessPrefab, ref gameRandom);
+                                   return PlacePrefab(ref rotation, ref width, ref height, ref position, ref boundingRect, ref medianHeight, ref wildernessPrefab, ref gameRandom);
+                                }
                             }
                         }
-                    }
 
                     attemptCount++;
                 }
@@ -111,10 +120,21 @@ namespace GeneratorPerformanceMod.Harmony.StreetTile
                 int xRange = streetTile.WorldPosition.x + PositionOffset - width - MinRange;
                 int yRange = streetTile.WorldPosition.y + PositionOffset - height - MinRange;
 
+                Log.Out("xRange " + xRange);
+                Log.Out("yRange " + yRange);
+                Log.Out("streetTile.WorldPosition.x " + streetTile.WorldPosition.x);
+                Log.Out("streetTile.WorldPosition.y " + streetTile.WorldPosition.y);
+
                 // If the x and y ranges are greater than the minimum range, calculate a random position within the range
                 if (xRange > MinRange && yRange > MinRange)
                 {
-                    return new Vector2i(gameRandom.RandomRange(streetTile.WorldPosition.x + MinRange, xRange), gameRandom.RandomRange(streetTile.WorldPosition.y + MinRange, yRange));
+                    try
+                    {
+                        return new Vector2i(gameRandom.RandomRange(streetTile.WorldPosition.x + MinRange, xRange), gameRandom.RandomRange(streetTile.WorldPosition.y + MinRange, yRange));
+                    } catch
+                    {
+                        return streetTile.WorldPositionCenter - new Vector2i(width / 2, height / 2);
+                    }
                 }
 
                 // Otherwise, adjust the position to the center of the street tile
@@ -188,7 +208,7 @@ namespace GeneratorPerformanceMod.Harmony.StreetTile
 
                 if (maxDimension != 0f)
                 {
-                    WildernessPlanner.WildernessPathInfos.Add(new WorldGenerationEngineFinal.WorldBuilder.WildernessPathInfo(new Vector2i(vector), prefabInstanceId, maxDimension, WorldGenerationEngineFinal.WorldBuilder.Instance.GetBiome((int)vector.x, (int)vector.y), 0, null));
+                    WildernessPlanner.WildernessPathInfos.Add(new WorldGenerationEngineFinal.WorldBuilder.WildernessPathInfo(new Vector2i(vector), prefabInstanceId, maxDimension, WorldGenerationEngineFinal.WorldBuilder.Instance.GetBiome((int)vector.x, (int)vector.y)));
                 }
 
                 UpdatePathingGrid(boundingRect);
@@ -352,8 +372,6 @@ namespace GeneratorPerformanceMod.Harmony.StreetTile
                     if (wildernessPrefab != null)
                     {
                         byte rotation = CalculateRotation(_parentRotations, wildernessPrefab, marker);
-                        Vector2i size = CalculateSize(wildernessPrefab, rotation);
-                        Rect rect = new Rect(position.x, position.y, size.x, size.y);
                         Vector3i _position = new Vector3i(position.x - WorldGenerationEngineFinal.WorldBuilder.Instance.WorldSize / 2, _parentPosition.y + marker.Start.y + wildernessPrefab.yOffset, position.y - WorldGenerationEngineFinal.WorldBuilder.Instance.WorldSize / 2);
                         AddPrefab(new PrefabDataInstance(PrefabManager.PrefabInstanceId++, _position, rotation, wildernessPrefab));
                         ++WorldGenerationEngineFinal.WorldBuilder.Instance.WildernessPrefabCount;
@@ -409,17 +427,6 @@ namespace GeneratorPerformanceMod.Harmony.StreetTile
             {
                 byte rotation = (byte)((_parentRotations + prefab.RotationsToNorth + marker.Rotations) % 4);
                 return rotation;
-            }
-
-            private static Vector2i CalculateSize(PrefabData prefab, byte rotation)
-            {
-                int width = prefab.size.x;
-                int height = prefab.size.z;
-                if (rotation == 1 || rotation == 3)
-                {
-                    (height, width) = (width, height);
-                }
-                return new Vector2i(width, height);
             }
 
             private static void AddPrefab(PrefabDataInstance pdi)
