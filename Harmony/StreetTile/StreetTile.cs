@@ -40,39 +40,46 @@ namespace GeneratorPerformanceMod.Harmony.StreetTile
                 var worldPositionCenter = streetTile.WorldPositionCenter;
                 var wildernessPrefab = PrefabManager.GetWildernessPrefab(poiTags, POITags.none, new Vector2i(), new Vector2i(), center: worldPositionCenter);
 
-                for (int attempt = 0; attempt < MaxAttempts; attempt++)
+                try
                 {
-                    var rotation = (wildernessPrefab.RotationsToNorth + gameRandom.RandomRange(0, 12)) % 4;
-                    var (sizeX, sizeZ) = GetRotatedSizes(wildernessPrefab, rotation);
-                    var position = GetPosition(gameRandom, sizeX, sizeZ);
-                    var rect = GetRect(position, sizeX, sizeZ);
-
-                    if (!IsValidRect(rect))
+                    for (int attempt = 0; attempt < MaxAttempts; attempt++)
                     {
-                        continue;
+                        var rotation = (wildernessPrefab.RotationsToNorth + gameRandom.RandomRange(0, 12)) % 4;
+                        var (sizeX, sizeZ) = GetRotatedSizes(wildernessPrefab, rotation);
+                        var position = GetPosition(gameRandom, sizeX, sizeZ);
+                        var rect = GetRect(position, sizeX, sizeZ);
+
+                        if (!IsValidRect(rect))
+                        {
+                            continue;
+                        }
+
+                        var biome = WorldGenerationEngineFinal.WorldBuilder.Instance.GetBiome((int)rect.center.x, (int)rect.center.y);
+                        var centerHeight = Mathf.CeilToInt(WorldGenerationEngineFinal.WorldBuilder.Instance.GetHeight((int)rect.center.x, (int)rect.center.y));
+                        var heights = GetHeights(position, sizeX, sizeZ, biome, centerHeight);
+
+                        if (heights == null)
+                        {
+                            continue;
+                        }
+
+                        var medianHeight = GetMedianHeight(heights);
+
+                        if (medianHeight + wildernessPrefab.yOffset < 2)
+                        {
+                            continue;
+                        }
+
+                        // The rest of the code that uses medianHeight and doesn't have any continue or return statements
+                        // IDK :( Fun
+
+                        GameRandomManager.Instance.FreeGameRandom(gameRandom);
+                        return true;
                     }
-
-                    var biome = WorldGenerationEngineFinal.WorldBuilder.Instance.GetBiome((int)rect.center.x, (int)rect.center.y);
-                    var centerHeight = Mathf.CeilToInt(WorldGenerationEngineFinal.WorldBuilder.Instance.GetHeight((int)rect.center.x, (int)rect.center.y));
-                    var heights = GetHeights(position, sizeX, sizeZ, biome, centerHeight);
-
-                    if (heights == null)
-                    {
-                        continue;
-                    }
-
-                    var medianHeight = GetMedianHeight(heights);
-
-                    if (medianHeight + wildernessPrefab.yOffset < 2)
-                    {
-                        continue;
-                    }
-
-                    // The rest of the code that uses medianHeight and doesn't have any continue or return statements
-                    // ...
-
-                    GameRandomManager.Instance.FreeGameRandom(gameRandom);
-                    return true;
+                }
+                catch (Exception e)
+                {
+                    Debug.LogError($"Error in NewSpawnWildernessPrefabMethod: {e}");
                 }
 
                 GameRandomManager.Instance.FreeGameRandom(gameRandom);
